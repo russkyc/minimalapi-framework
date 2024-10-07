@@ -38,27 +38,38 @@ public static class QueryExtensions
 
         foreach (var filter in filters)
         {
-            var propertyInfo = entityType.GetProperty(filter.Key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-            if (propertyInfo == null || !propertyInfo.GetCustomAttributes<QueryableAttribute>().Any())
+            try
             {
+                var propertyInfo = entityType.GetProperty(filter.Key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                if (propertyInfo == null || !propertyInfo.GetCustomAttributes<QueryableAttribute>().Any())
+                {
+                    continue;
+                }
+
+                var property = Expression.Property(parameter, propertyInfo);
+                var value = Expression.Constant(Convert.ChangeType(filter.Value.Value, propertyInfo.PropertyType));
+
+                Expression comparison = filter.Value.Operation switch
+                {
+                    "CONTAINS" => Expression.Call(property, "Contains", null, value),
+                    "STARTSWITH" => Expression.Call(property, "StartsWith", null, value),
+                    "ENDSWITH" => Expression.Call(property, "EndsWith", null, value),
+                    "GREATERTHAN" => Expression.GreaterThan(property, value),
+                    "LESSTHAN" => Expression.LessThan(property, value),
+                    "GREATERTHANOREQUAL" => Expression.GreaterThanOrEqual(property, value),
+                    "LESSTHANOREQUAL" => Expression.LessThanOrEqual(property, value),
+                    "NOTEQUALS" => Expression.NotEqual(property, value),
+                    _ => Expression.Equal(property, value),
+                };
+
+                var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
+                query = query.Where(lambda);
+            }
+            catch (InvalidOperationException)
+            {
+                // Skip applying the filter if an InvalidOperationException occurs
                 continue;
             }
-
-            var property = Expression.Property(parameter, propertyInfo);
-            var value = Expression.Constant(Convert.ChangeType(filter.Value.Value, propertyInfo.PropertyType));
-
-            Expression comparison = filter.Value.Operation switch
-            {
-                "CONTAINS" => Expression.Call(property, "Contains", null, value),
-                "STARTSWITH" => Expression.Call(property, "StartsWith", null, value),
-                "ENDSWITH" => Expression.Call(property, "EndsWith", null, value),
-                "GREATERTHAN" => Expression.GreaterThan(property, value),
-                "LESSTHAN" => Expression.LessThan(property, value),
-                _ => Expression.Equal(property, value),
-            };
-
-            var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
-            query = query.Where(lambda);
         }
 
         return query;
