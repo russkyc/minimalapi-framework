@@ -21,13 +21,20 @@ public static class MinimalApiExtensions
         var mapGroupName = groupName ?? typeof(T).Name;
         var entityEndpointGroup = endpointBuilder.MapGroup($"{mapGroupName.ToLower()}");
         entityEndpointGroup
-            .MapGet("/", ([FromServices] EntityContext<T> context, [FromQuery] string? include) =>
-            {
-                var entities = context.Entities
-                    .AsNoTracking()
-                    .ApplyIncludes(include);
-                return Results.Ok(entities);
-            })
+            .MapGet("/",
+                ([FromServices] EntityContext<T> context, [FromQuery] string? include,
+                    [FromQuery] FilterDictionary? filters) =>
+                {
+                    var entities = context.Entities
+                        .AsNoTracking()
+                        .ApplyIncludes(include);
+                    if (filters is not null)
+                    {
+                        entities = entities.ApplyFilters(filters);
+                    }
+
+                    return Results.Ok(entities);
+                })
             .WithName($"Get {mapGroupName} Collection")
             .WithTags(mapGroupName)
             .WithOpenApi();
