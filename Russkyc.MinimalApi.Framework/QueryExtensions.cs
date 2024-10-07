@@ -80,11 +80,11 @@ public static class QueryExtensions
         return query;
     }
 
-    public static IQueryable<object> SelectProperties<T>(this IQueryable<T> query, string? properties) where T : class
+    public static IQueryable<T> SelectProperties<T>(this IQueryable<T> query, string? properties) where T : class
     {
         if (string.IsNullOrEmpty(properties))
         {
-            return query.Cast<object>();
+            return query.Cast<T>();
         }
 
         var propertyNames = properties.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -99,11 +99,12 @@ public static class QueryExtensions
             .Select(propertyInfo => Expression.Bind(propertyInfo, Expression.Property(parameter, propertyInfo)))
             .ToList();
 
-        var selector = Expression.Lambda<Func<T, object>>(
+        var selector = Expression.Lambda<Func<T, T>>(
             Expression.MemberInit(Expression.New(typeof(T)), bindings),
             parameter
         );
 
         return query.Select(selector);
     }
+    
 }

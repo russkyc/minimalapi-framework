@@ -22,7 +22,7 @@ public static class MinimalApiExtensions
     var entityEndpointGroup = endpointBuilder.MapGroup($"{mapGroupName.ToLower()}");
     entityEndpointGroup
         .MapGet("/",
-            ([FromServices] EntityContext<T> context, [FromQuery] string? include,
+            async ([FromServices] EntityContext<T> context, [FromQuery] string? include,
                 [FromQuery] FilterDictionary? filters, [FromQuery] string? property) =>
             {
                 var entities = context.Entities
@@ -32,28 +32,33 @@ public static class MinimalApiExtensions
                 {
                     entities = entities.ApplyFilters(filters);
                 }
+                if (property is not null)
+                {
+                    entities = entities.SelectProperties(property);
+                }
 
-                var selectedEntities = entities.SelectProperties(property);
-                return Results.Ok(selectedEntities);
+                var result = await entities.ToListAsync();
+                return Results.Ok(result);
             })
         .WithName($"Get {mapGroupName} Collection")
         .WithTags(mapGroupName)
         .WithOpenApi();
     entityEndpointGroup
         .MapGet("/{id:int}",
-            async ([FromServices] EntityContext<T> context, [FromRoute] int id, [FromQuery] string? include, [FromQuery] string? property) =>
+            async ([FromServices] EntityContext<T> context, [FromRoute] int id, [FromQuery] string? include,
+                [FromQuery] string? property) =>
             {
                 var query = context.Entities
                     .AsNoTracking()
-                    .ApplyIncludes(include);
+                    .ApplyIncludes(include)
+                    .SelectProperties(property);
                 var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
                 if (entity == null)
                 {
                     return Results.NotFound();
                 }
 
-                var selectedEntity = query.Where(e => EF.Property<int>(e, "Id") == id).SelectProperties(property).FirstOrDefault();
-                return Results.Ok(selectedEntity);
+                return Results.Ok(entity);
             })
         .WithName($"Get {mapGroupName}")
         .WithTags(mapGroupName)
