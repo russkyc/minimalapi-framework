@@ -31,24 +31,31 @@ public static class QueryExtensions
         return query;
     }
 
-    public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, Dictionary<string, string> filters)
-        where T : class
+    public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, FilterDictionary filters) where T : class
     {
         var entityType = typeof(T);
         var parameter = Expression.Parameter(entityType, "e");
 
         foreach (var filter in filters)
         {
-            var propertyInfo = entityType.GetProperty(filter.Key,
-                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            var propertyInfo = entityType.GetProperty(filter.Key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
             if (propertyInfo == null || !propertyInfo.GetCustomAttributes<QueryableAttribute>().Any())
             {
                 continue;
             }
 
             var property = Expression.Property(parameter, propertyInfo);
-            var value = Expression.Constant(Convert.ChangeType(filter.Value, propertyInfo.PropertyType));
-            var comparison = Expression.Equal(property, value);
+            var value = Expression.Constant(Convert.ChangeType(filter.Value.Value, propertyInfo.PropertyType));
+
+            Expression comparison = filter.Value.Operation switch
+            {
+                "CONTAINS" => Expression.Call(property, "Contains", null, value),
+                "STARTSWITH" => Expression.Call(property, "StartsWith", null, value),
+                "ENDSWITH" => Expression.Call(property, "EndsWith", null, value),
+                "GREATERTHAN" => Expression.GreaterThan(property, value),
+                "LESSTHAN" => Expression.LessThan(property, value),
+                _ => Expression.Equal(property, value),
+            };
 
             var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
             query = query.Where(lambda);
