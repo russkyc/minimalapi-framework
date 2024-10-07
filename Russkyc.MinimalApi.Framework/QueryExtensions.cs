@@ -70,6 +70,11 @@ public static class QueryExtensions
                 // Skip applying the filter if an InvalidOperationException occurs
                 continue;
             }
+            catch (FormatException)
+            {
+                // Skip applying the filter if a FormatException occurs
+                continue;
+            }
         }
 
         return query;
