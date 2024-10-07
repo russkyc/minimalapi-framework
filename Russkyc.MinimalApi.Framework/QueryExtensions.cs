@@ -24,7 +24,12 @@ public static class QueryExtensions
         {
             if (properties.TryGetValue(includeProperty, out var actualPropertyName))
             {
-                query = query.Include(actualPropertyName);
+                var navigationProperty = entityType.GetProperty(actualPropertyName,
+                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                if (navigationProperty != null)
+                {
+                    query = query.Include(navigationProperty.Name);
+                }
             }
         }
 
@@ -40,7 +45,8 @@ public static class QueryExtensions
         {
             try
             {
-                var propertyInfo = entityType.GetProperty(filter.Key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                var propertyInfo = entityType.GetProperty(filter.Key,
+                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
                 if (propertyInfo == null || !propertyInfo.GetCustomAttributes<QueryableAttribute>().Any())
                 {
                     continue;
@@ -94,7 +100,8 @@ public static class QueryExtensions
         var parameter = Expression.Parameter(entityType, "e");
 
         var bindings = propertyNames
-            .Select(propertyName => entityType.GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance))
+            .Select(propertyName => entityType.GetProperty(propertyName,
+                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance))
             .Where(propertyInfo => propertyInfo != null)
             .Select(propertyInfo => Expression.Bind(propertyInfo, Expression.Property(parameter, propertyInfo)))
             .ToList();
@@ -106,5 +113,4 @@ public static class QueryExtensions
 
         return query.Select(selector);
     }
-    
 }
