@@ -16,81 +16,88 @@ public static class MinimalApiExtensions
 
 
     public static void MapEntityEndpoints<T>(this IEndpointRouteBuilder endpointBuilder, string? groupName = null)
-        where T : class
-    {
-        var mapGroupName = groupName ?? typeof(T).Name;
-        var entityEndpointGroup = endpointBuilder.MapGroup($"{mapGroupName.ToLower()}");
-        entityEndpointGroup
-            .MapGet("/",
-                ([FromServices] EntityContext<T> context, [FromQuery] string? include,
-                    [FromQuery] FilterDictionary? filters) =>
+    where T : class
+{
+    var mapGroupName = groupName ?? typeof(T).Name;
+    var entityEndpointGroup = endpointBuilder.MapGroup($"{mapGroupName.ToLower()}");
+    entityEndpointGroup
+        .MapGet("/",
+            ([FromServices] EntityContext<T> context, [FromQuery] string? include,
+                [FromQuery] FilterDictionary? filters, [FromQuery] string? property) =>
+            {
+                var entities = context.Entities
+                    .AsNoTracking()
+                    .ApplyIncludes(include);
+                if (filters is not null)
                 {
-                    var entities = context.Entities
-                        .AsNoTracking()
-                        .ApplyIncludes(include);
-                    if (filters is not null)
-                    {
-                        entities = entities.ApplyFilters(filters);
-                    }
+                    entities = entities.ApplyFilters(filters);
+                }
 
-                    return Results.Ok(entities);
-                })
-            .WithName($"Get {mapGroupName} Collection")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-        entityEndpointGroup
-            .MapGet("/{id:int}",
-                async ([FromServices] EntityContext<T> context, [FromRoute] int id, [FromQuery] string? include) =>
-                {
-                    var query = context.Entities
-                        .AsNoTracking()
-                        .ApplyIncludes(include);
-                    var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
-                    return Results.Ok(entity);
-                })
-            .WithName($"Get {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-        entityEndpointGroup
-            .MapPost("/", async ([FromServices] EntityContext<T> context, [FromBody] T entity) =>
-            {
-                var entryEntity = await context.Entities
-                    .AddAsync(entity);
-                await context.SaveChangesAsync();
-                return Results.Ok(entryEntity.Entity);
+                var selectedEntities = entities.SelectProperties(property);
+                return Results.Ok(selectedEntities);
             })
-            .WithName($"Add {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-        entityEndpointGroup
-            .MapPatch("/", async ([FromServices] EntityContext<T> context, [FromBody] T entity) =>
+        .WithName($"Get {mapGroupName} Collection")
+        .WithTags(mapGroupName)
+        .WithOpenApi();
+    entityEndpointGroup
+        .MapGet("/{id:int}",
+            async ([FromServices] EntityContext<T> context, [FromRoute] int id, [FromQuery] string? include, [FromQuery] string? property) =>
             {
-                var entryEntity = context.Entities
-                    .Update(entity);
-                await context.SaveChangesAsync();
-                return Results.Ok(entryEntity.Entity);
-            })
-            .WithName($"Update {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-        entityEndpointGroup
-            .MapDelete("/{id:int}", async ([FromServices] EntityContext<T> context, [FromRoute] int id) =>
-            {
-                var entity = await context.Entities
-                    .FindAsync(id);
-                if (entity is null)
+                var query = context.Entities
+                    .AsNoTracking()
+                    .ApplyIncludes(include);
+                var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+                if (entity == null)
                 {
                     return Results.NotFound();
                 }
 
-                context.Entities.Remove(entity);
-                await context.SaveChangesAsync();
-                return Results.Ok(entity);
+                var selectedEntity = query.Where(e => EF.Property<int>(e, "Id") == id).SelectProperties(property).FirstOrDefault();
+                return Results.Ok(selectedEntity);
             })
-            .WithName($"Delete {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-    }
+        .WithName($"Get {mapGroupName}")
+        .WithTags(mapGroupName)
+        .WithOpenApi();
+    entityEndpointGroup
+        .MapPost("/", async ([FromServices] EntityContext<T> context, [FromBody] T entity) =>
+        {
+            var entryEntity = await context.Entities
+                .AddAsync(entity);
+            await context.SaveChangesAsync();
+            return Results.Ok(entryEntity.Entity);
+        })
+        .WithName($"Add {mapGroupName}")
+        .WithTags(mapGroupName)
+        .WithOpenApi();
+    entityEndpointGroup
+        .MapPatch("/", async ([FromServices] EntityContext<T> context, [FromBody] T entity) =>
+        {
+            var entryEntity = context.Entities
+                .Update(entity);
+            await context.SaveChangesAsync();
+            return Results.Ok(entryEntity.Entity);
+        })
+        .WithName($"Update {mapGroupName}")
+        .WithTags(mapGroupName)
+        .WithOpenApi();
+    entityEndpointGroup
+        .MapDelete("/{id:int}", async ([FromServices] EntityContext<T> context, [FromRoute] int id) =>
+        {
+            var entity = await context.Entities
+                .FindAsync(id);
+            if (entity is null)
+            {
+                return Results.NotFound();
+            }
+
+            context.Entities.Remove(entity);
+            await context.SaveChangesAsync();
+            return Results.Ok(entity);
+        })
+        .WithName($"Delete {mapGroupName}")
+        .WithTags(mapGroupName)
+        .WithOpenApi();
+}
 
     public static void AddAllEntityServices(this IServiceCollection serviceCollection, Assembly assembly,
         Action<DbContextOptionsBuilder>? optionsAction = null,

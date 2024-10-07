@@ -79,4 +79,31 @@ public static class QueryExtensions
 
         return query;
     }
+
+    public static IQueryable<object> SelectProperties<T>(this IQueryable<T> query, string? properties) where T : class
+    {
+        if (string.IsNullOrEmpty(properties))
+        {
+            return query.Cast<object>();
+        }
+
+        var propertyNames = properties.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim());
+
+        var entityType = typeof(T);
+        var parameter = Expression.Parameter(entityType, "e");
+
+        var bindings = propertyNames
+            .Select(propertyName => entityType.GetProperty(propertyName, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance))
+            .Where(propertyInfo => propertyInfo != null)
+            .Select(propertyInfo => Expression.Bind(propertyInfo, Expression.Property(parameter, propertyInfo)))
+            .ToList();
+
+        var selector = Expression.Lambda<Func<T, object>>(
+            Expression.MemberInit(Expression.New(typeof(T)), bindings),
+            parameter
+        );
+
+        return query.Select(selector);
+    }
 }
