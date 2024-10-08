@@ -1,12 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Russkyc.MinimalApi.Framework;
+﻿using Russkyc.MinimalApi.Framework;
 
 namespace SampleProject;
 
-[DbEntity]
-public class SampleEmbeddedEntity
+public class SampleEmbeddedEntity : DbEntity<Guid>
 {
-    [Key]
-    public int Id { get; set; }
     public string Property2 { get; set; }
 }
