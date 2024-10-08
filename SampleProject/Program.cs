@@ -4,11 +4,13 @@ using Russkyc.MinimalApi.Framework;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEndpointsApiExplorer();
-
 // You can implement your own auth as needed
 // As an example, uncomment this line if you want JWT auth
 // builder.Services.AddJwtAuth();
+// IMPORTANT: Please remove the AddSwaggerGen if you uncomment this line.
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var assembly = Assembly.GetExecutingAssembly();
 

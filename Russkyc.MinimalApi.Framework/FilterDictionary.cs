@@ -1,6 +1,6 @@
 ﻿namespace Russkyc.MinimalApi.Framework;
 
-public class FilterDictionary : Dictionary<string, (string Operation, string Value)>, IParsable<FilterDictionary>
+internal class FilterDictionary : Dictionary<string, (string Operation, string Value)>, IParsable<FilterDictionary>
 {
     public static FilterDictionary Parse(string s, IFormatProvider? provider)
     {

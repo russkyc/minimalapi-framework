@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Russkyc.MinimalApi.Framework;
 
-public static class QueryExtensions
+internal static class QueryExtensions
 {
-    public static IQueryable<T> ApplyIncludes<T>(this IQueryable<T> query, string? includes) where T : class
+    internal static IQueryable<T> ApplyIncludes<T>(this IQueryable<T> query, string? includes) where T : class
     {
         if (string.IsNullOrEmpty(includes))
         {
@@ -36,7 +36,7 @@ public static class QueryExtensions
         return query;
     }
 
-    public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, FilterDictionary filters) where T : class
+    internal static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, FilterDictionary filters) where T : class
     {
         var entityType = typeof(T);
         var parameter = Expression.Parameter(entityType, "e");
@@ -86,7 +86,7 @@ public static class QueryExtensions
         return query;
     }
 
-    public static IQueryable<T> SelectProperties<T>(this IQueryable<T> query, string? properties) where T : class
+    internal static IQueryable<T> SelectProperties<T>(this IQueryable<T> query, string? properties) where T : class
     {
         if (string.IsNullOrEmpty(properties))
         {
