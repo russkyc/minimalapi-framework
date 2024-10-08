@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <OutputType>library</OutputType>
         <UserSecretsId>07fb0dbb-8872-4f52-a7b7-67262f8f411e</UserSecretsId>
+        <PackageReleaseNotes>Added support custom entity key types</PackageReleaseNotes>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -18,7 +19,7 @@
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.1.1</Version>
+        <Version>0.2.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
