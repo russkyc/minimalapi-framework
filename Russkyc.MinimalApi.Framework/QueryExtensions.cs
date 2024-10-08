@@ -47,7 +47,7 @@ internal static class QueryExtensions
             {
                 var propertyInfo = entityType.GetProperty(filter.Key,
                     BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                if (propertyInfo == null || !propertyInfo.GetCustomAttributes<QueryableAttribute>().Any())
+                if (propertyInfo == null)
                 {
                     continue;
                 }
