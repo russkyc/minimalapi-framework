@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using System.Text.Json;
 
 namespace Russkyc.MinimalApi.Framework;
 
@@ -62,7 +63,7 @@ public static class MinimalApiExtensions
                     var result = await entities.ToListAsync();
                     return Results.Ok(result);
                 })
-            .WithName($"Get {mapGroupName} Collection")
+            .WithName($"Get a {mapGroupName} collection")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
@@ -85,7 +86,7 @@ public static class MinimalApiExtensions
 
                     return Results.Ok(entity);
                 })
-            .WithName($"Get {mapGroupName}")
+            .WithDescription($"Get a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
@@ -103,7 +104,7 @@ public static class MinimalApiExtensions
                 await context.SaveChangesAsync();
                 return Results.Ok(entryEntity.Entity);
             })
-            .WithName($"Add {mapGroupName}")
+            .WithDescription($"Add a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
@@ -115,7 +116,7 @@ public static class MinimalApiExtensions
                 await context.SaveChangesAsync();
                 return Results.Ok(entryEntity.Entity);
             })
-            .WithName($"Update {mapGroupName}")
+            .WithDescription($"Update a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
@@ -134,7 +135,107 @@ public static class MinimalApiExtensions
                     await context.SaveChangesAsync();
                     return Results.Ok(entity);
                 })
-            .WithName($"Delete {mapGroupName}")
+            .WithDescription($"Delete a single {mapGroupName}")
+            .WithTags(mapGroupName)
+            .WithOpenApi();
+
+        var addEntitiesEndpoint = entityEndpointGroup
+            .MapPost("/batch", async ([FromServices] EntityContext<TEntity> context, [FromBody] TEntity[] entities) =>
+            {
+                var entityEntries = new List<TEntity>();
+                foreach (var entity in entities)
+                {
+                    var existingEntity = await context.Entities.FindAsync(((IDbEntity<TKeyType>)entity).Id);
+                    if (existingEntity != null)
+                    {
+                        return Results.Conflict("An entity with the same key already exists.");
+                    }
+
+                    var entryEntity = await context.Entities
+                        .AddAsync(entity);
+                    entityEntries.Add(entryEntity.Entity);
+                }
+
+                await context.SaveChangesAsync();
+                return Results.Ok(entityEntries);
+            })
+            .WithDescription($"Batch Insert {mapGroupName}")
+            .WithTags(mapGroupName)
+            .WithOpenApi();
+
+        var updateEntitiesEndpoint = entityEndpointGroup
+            .MapPut("/batch", async ([FromServices] EntityContext<TEntity> context, [FromBody] TEntity[] entities) =>
+            {
+                context.Entities
+                    .UpdateRange(entities);
+                var result = await context.SaveChangesAsync();
+                return Results.Ok($"Updated {result} items");
+            })
+            .WithDescription($"Batch update {mapGroupName}")
+            .WithTags(mapGroupName)
+            .WithOpenApi();
+        
+        var updateEntitiesWithFiltersEndpoint = entityEndpointGroup
+        .MapPatch("/batch",
+            async ([FromServices] EntityContext<TEntity> context, [FromQuery] FilterDictionary? filters, [FromBody] Dictionary<string, object> updateFields) =>
+            {
+                var entities = context.Entities.AsQueryable();
+
+                if (filters is not null)
+                {
+                    entities = entities.ApplyFilters(filters);
+                }
+
+                var entityList = await entities.ToListAsync();
+
+                foreach (var entity in entityList)
+                {
+                    foreach (var field in updateFields)
+                    {
+                        var property = typeof(TEntity).GetProperty(field.Key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                        if (property != null)
+                        {
+                            try
+                            {
+                                var jsonValue = JsonSerializer.Serialize(field.Value);
+                                var convertedValue = JsonSerializer.Deserialize(jsonValue, property.PropertyType);
+                                property.SetValue(entity, convertedValue);
+                            }
+                            catch (Exception)
+                            {
+                                return Results.BadRequest($"Error setting property {field.Key} to {JsonSerializer.Serialize(field.Value)}");
+                            }
+                        }
+                    }
+                }
+
+                context.Entities.UpdateRange(entityList);
+                var result = await context.SaveChangesAsync();
+                return Results.Ok($"Updated {result} items");
+            })
+        .WithDescription($"Batch update {mapGroupName} with filters and dynamic fields")
+        .WithTags(mapGroupName)
+        .WithOpenApi();
+
+        var deleteEntitiesEndpoint = entityEndpointGroup
+            .MapDelete("/batch",
+                async ([FromServices] EntityContext<TEntity> context, [FromQuery] string? include,
+                    [FromQuery] FilterDictionary? filters) =>
+                {
+                    var entities = context.Entities
+                        .AsNoTracking()
+                        .ApplyIncludes(include);
+
+                    if (filters is not null)
+                    {
+                        entities = entities.ApplyFilters(filters);
+                    }
+
+                    context.Entities.RemoveRange(entities);
+                    var result = await context.SaveChangesAsync();
+                    return Results.Ok($"Deleted {result} items");
+                })
+            .WithDescription($"Batch delete {mapGroupName} based on query parameters")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
@@ -143,6 +244,11 @@ public static class MinimalApiExtensions
         routeOptionsAction?.Invoke(getSingleEntityEndpoint);
         routeOptionsAction?.Invoke(updateEntityEndpoint);
         routeOptionsAction?.Invoke(deleteEntityEndpoint);
+
+        routeOptionsAction?.Invoke(addEntitiesEndpoint);
+        routeOptionsAction?.Invoke(updateEntitiesEndpoint);
+        routeOptionsAction?.Invoke(updateEntitiesWithFiltersEndpoint);
+        routeOptionsAction?.Invoke(deleteEntitiesEndpoint);
     }
 
     public static void MapAllEntityEndpoints<TId>(this IEndpointRouteBuilder endpointBuilder, Assembly assembly,
