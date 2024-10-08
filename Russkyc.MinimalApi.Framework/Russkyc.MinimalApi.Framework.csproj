@@ -5,13 +5,31 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <OutputType>library</OutputType>
-      <UserSecretsId>07fb0dbb-8872-4f52-a7b7-67262f8f411e</UserSecretsId>
-  </PropertyGroup>
+        <UserSecretsId>07fb0dbb-8872-4f52-a7b7-67262f8f411e</UserSecretsId>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>Russkyc.MinimalApi.Framework</Title>
+        <Authors>russkyc</Authors>
+        <Description>A Generic MinimalApi Crud Generator for EntityFrameworkCore</Description>
+        <Copyright>russkyc 2024</Copyright>
+        <PackageTags>ef-core ef minimal-api api crud rest</PackageTags>
+        <PackageIcon>PackageIcon.png</PackageIcon>
+        <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
+        <Version>0.1.0</Version>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8" />
+        <Resource Include="PackageIcon.png" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8"/>
     </ItemGroup>
 
 </Project>
