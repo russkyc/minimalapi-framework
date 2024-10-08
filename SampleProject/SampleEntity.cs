@@ -7,7 +7,9 @@ namespace SampleProject;
 public class SampleEntity
 {
     [Key]
+    [Queryable]
     public int Id { get; set; }
+    [Queryable]
     public string Property { get; set; }
     public virtual SampleEmbeddedEntity EmbeddedEntity { get; set; }
 }
