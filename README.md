@@ -19,17 +19,6 @@ and for small apps that only require CRUD operations.
 - Small projects that only require CRUD functionality
 - Frontend Testing (if a backend API is needed)
 
-## Important things to consider
-- When using generic implementations like this on the server side,
-  business logic is now moved into the client and becomes a client concern.
-- If your API needs to do complex business logic over the CRUD functionality,
-  please consider implementing custom endpoints instead of using generic endpoints
-  such as this.
-- There is currently no implementation for validation and DTO mapping,
-  this can be added later as the project updates.
-
-Certainly! Here is a "Getting Started" section for the `README.md` file, including NuGet installation and setup instructions.
-
 ## Getting Started
 
 ### Installation
@@ -372,3 +361,12 @@ Content-Type: application/json
 ```http
 DELETE /api/sampleentity/batch?filters=property=CONTAINS(Example)
 ```
+
+## Important things to consider
+- When using generic implementations like this on the server side,
+  business logic is now moved into the client and becomes a client concern.
+- If your API needs to do complex business logic over the CRUD functionality,
+  please consider implementing custom endpoints instead of using generic endpoints
+  such as this.
+- There is currently no implementation for validation and DTO mapping,
+  this can be added later as the project updates.
