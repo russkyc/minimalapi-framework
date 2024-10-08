@@ -15,12 +15,13 @@ public static class MinimalApiExtensions
     }
 
 
-    public static void MapEntityEndpoints<T>(this IEndpointRouteBuilder endpointBuilder, string? groupName = null)
+    public static void MapEntityEndpoints<T>(this IEndpointRouteBuilder endpointBuilder, string? groupName = null, Action<IEndpointConventionBuilder>? routeOptionsAction = null)
     where T : class
 {
     var mapGroupName = groupName ?? typeof(T).Name;
     var entityEndpointGroup = endpointBuilder.MapGroup($"{mapGroupName.ToLower()}");
-    entityEndpointGroup
+    
+    var getCollectionEndpoint = entityEndpointGroup
         .MapGet("/",
             async ([FromServices] EntityContext<T> context, [FromQuery] string? include,
                 [FromQuery] FilterDictionary? filters, [FromQuery] string? property) =>
@@ -43,7 +44,8 @@ public static class MinimalApiExtensions
         .WithName($"Get {mapGroupName} Collection")
         .WithTags(mapGroupName)
         .WithOpenApi();
-    entityEndpointGroup
+
+    var getSingleEntityEndpoint = entityEndpointGroup
         .MapGet("/{id:int}",
             async ([FromServices] EntityContext<T> context, [FromRoute] int id, [FromQuery] string? include,
                 [FromQuery] string? property) =>
@@ -63,7 +65,8 @@ public static class MinimalApiExtensions
         .WithName($"Get {mapGroupName}")
         .WithTags(mapGroupName)
         .WithOpenApi();
-    entityEndpointGroup
+    
+    var addEntityEndpoint = entityEndpointGroup
         .MapPost("/", async ([FromServices] EntityContext<T> context, [FromBody] T entity) =>
         {
             var entryEntity = await context.Entities
@@ -74,7 +77,8 @@ public static class MinimalApiExtensions
         .WithName($"Add {mapGroupName}")
         .WithTags(mapGroupName)
         .WithOpenApi();
-    entityEndpointGroup
+    
+    var updateEntityEndpoint = entityEndpointGroup
         .MapPatch("/", async ([FromServices] EntityContext<T> context, [FromBody] T entity) =>
         {
             var entryEntity = context.Entities
@@ -85,7 +89,8 @@ public static class MinimalApiExtensions
         .WithName($"Update {mapGroupName}")
         .WithTags(mapGroupName)
         .WithOpenApi();
-    entityEndpointGroup
+    
+    var deleteEntityEndpoint = entityEndpointGroup
         .MapDelete("/{id:int}", async ([FromServices] EntityContext<T> context, [FromRoute] int id) =>
         {
             var entity = await context.Entities
@@ -102,6 +107,13 @@ public static class MinimalApiExtensions
         .WithName($"Delete {mapGroupName}")
         .WithTags(mapGroupName)
         .WithOpenApi();
+    
+    routeOptionsAction?.Invoke(addEntityEndpoint);
+    routeOptionsAction?.Invoke(getCollectionEndpoint);
+    routeOptionsAction?.Invoke(getSingleEntityEndpoint);
+    routeOptionsAction?.Invoke(updateEntityEndpoint);
+    routeOptionsAction?.Invoke(deleteEntityEndpoint);
+
 }
 
     public static void AddAllEntityServices(this IServiceCollection serviceCollection, Assembly assembly,
@@ -121,7 +133,7 @@ public static class MinimalApiExtensions
         }
     }
 
-    public static void MapAllEntityEndpoints(this IEndpointRouteBuilder endpointBuilder, Assembly assembly)
+    public static void MapAllEntityEndpoints(this IEndpointRouteBuilder endpointBuilder, Assembly assembly, Action<IEndpointConventionBuilder>? routeOptionsAction = null)
     {
         var entityTypes = assembly.GetTypes()
             .Where(t => t.GetCustomAttribute<DbEntityAttribute>() != null);
@@ -130,7 +142,7 @@ public static class MinimalApiExtensions
         {
             var method = typeof(MinimalApiExtensions).GetMethod(nameof(MapEntityEndpoints))?
                 .MakeGenericMethod(entityType);
-            method?.Invoke(null, [endpointBuilder, null!]);
+            method?.Invoke(null, [endpointBuilder, null, routeOptionsAction]);
         }
     }
 }

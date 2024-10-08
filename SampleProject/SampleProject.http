@@ -1,6 +1,37 @@
-@SampleProject_HostAddress = http://localhost:5010
+@SampleProject_HostAddress = https://localhost:7102
 
-GET {{SampleProject_HostAddress}}/weatherforecast/
+### Get All Entities
+GET {{SampleProject_HostAddress}}/api/sampleentity
 Accept: application/json
 
-###
+### Get All Entities with Includes
+GET {{SampleProject_HostAddress}}/api/sampleentity?include=embeddedentity
+Accept: application/json
+
+### Get All Entities with Filters
+GET {{SampleProject_HostAddress}}/api/sampleentity?filters=property=CONTAINS(Example)
+Accept: application/json
+
+### Get All Entities with Property Selection
+GET {{SampleProject_HostAddress}}/api/sampleentity?property=Id,Property
+Accept: application/json
+
+### Get All Entities with Includes, Filters, and Property Selection
+GET {{SampleProject_HostAddress}}/api/sampleentity?include=embeddedentity&filters=property=CONTAINS(Example)&property=Id,Property
+Accept: application/json
+
+### Get Single Entity by ID
+GET {{SampleProject_HostAddress}}/api/sampleentity/1
+Accept: application/json
+
+### Get Single Entity by ID with Includes
+GET {{SampleProject_HostAddress}}/api/sampleentity/1?include=embeddedentity
+Accept: application/json
+
+### Get Single Entity by ID with Property Selection
+GET {{SampleProject_HostAddress}}/api/sampleentity/1?property=Id,Property
+Accept: application/json
+
+### Get Single Entity by ID with Includes and Property Selection
+GET {{SampleProject_HostAddress}}/api/sampleentity/1?include=embeddedentity&property=Id,Property
+Accept: application/json
