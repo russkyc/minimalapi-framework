@@ -201,10 +201,9 @@ public static class MinimalApiExtensions
                                 var convertedValue = JsonSerializer.Deserialize(jsonValue, property.PropertyType);
                                 property.SetValue(entity, convertedValue);
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
-                                // Log the exception or handle it as needed
-                                Console.WriteLine($"Error setting property {field.Key}: {ex.Message}");
+                                return Results.BadRequest($"Error setting property {field.Key} to {JsonSerializer.Serialize(field.Value)}");
                             }
                         }
                     }
@@ -221,7 +220,7 @@ public static class MinimalApiExtensions
         var deleteEntitiesEndpoint = entityEndpointGroup
             .MapDelete("/batch",
                 async ([FromServices] EntityContext<TEntity> context, [FromQuery] string? include,
-                    [FromQuery] FilterDictionary? filters, [FromQuery] string? property) =>
+                    [FromQuery] FilterDictionary? filters) =>
                 {
                     var entities = context.Entities
                         .AsNoTracking()
@@ -230,11 +229,6 @@ public static class MinimalApiExtensions
                     if (filters is not null)
                     {
                         entities = entities.ApplyFilters(filters);
-                    }
-
-                    if (property is not null)
-                    {
-                        entities = entities.SelectProperties(property);
                     }
 
                     context.Entities.RemoveRange(entities);
