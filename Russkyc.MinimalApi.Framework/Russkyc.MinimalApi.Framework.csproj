@@ -20,6 +20,12 @@
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
         <Version>0.1.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <IsPackable>true</IsPackable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DebugSymbols>false</DebugSymbols>
+      <DebugType>none</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

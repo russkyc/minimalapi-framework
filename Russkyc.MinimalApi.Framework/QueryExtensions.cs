@@ -74,12 +74,10 @@ internal static class QueryExtensions
             catch (InvalidOperationException)
             {
                 // Skip applying the filter if an InvalidOperationException occurs
-                continue;
             }
             catch (FormatException)
             {
                 // Skip applying the filter if a FormatException occurs
-                continue;
             }
         }
 
@@ -103,7 +101,9 @@ internal static class QueryExtensions
             .Select(propertyName => entityType.GetProperty(propertyName,
                 BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance))
             .Where(propertyInfo => propertyInfo != null)
+#pragma warning disable CS8604 // Possible null reference argument.
             .Select(propertyInfo => Expression.Bind(propertyInfo, Expression.Property(parameter, propertyInfo)))
+#pragma warning restore CS8604 // Possible null reference argument.
             .ToList();
 
         var selector = Expression.Lambda<Func<T, T>>(
