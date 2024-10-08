@@ -1,18 +1,93 @@
-﻿
-<h2 align="center">Russkyc.MinimalApi.Framework - A generic MinimalApi Crud Generator for EntityFrameworkCore</h2>
+﻿<h2 align="center">Russkyc.MinimalApi.Framework - A generic MinimalApi Crud Generator for EntityFrameworkCore</h2>
+
+<p align="center">
+    <img src="https://img.shields.io/nuget/v/Russkyc.MinimalApi.Framework?color=1f72de" alt="Nuget">
+    <img src="https://img.shields.io/badge/-.NET%208.0-blueviolet?color=1f72de&label=NET" alt="">
+    <img src="https://img.shields.io/github/license/russkyc/minimalapi-framework">
+    <img src="https://img.shields.io/github/issues/russkyc/minimalapi-framework">
+    <img src="https://img.shields.io/nuget/dt/Russkyc.MinimalApi.Framework">
+</p>
 
 This dynamically generates a generic CRUD API implementation
 backed with Entity Framework Core and Minimal API. This can be used for quick prototyping
 and for small apps that only require CRUD operations.
 
-<img src="Resources/preview.jpeg" style="width: 100%;" />
+<img src="Resources/swagger.jpeg" style="width: 100%;" />
 
-## Sample project
+## Potential use-cases
+- Quick API prototyping
+- Small projects that only require CRUD functionality
+- Frontend Testing (if a backend API is needed)
+
+## Important things to consider
+- When using generic implementations like this on the server side,
+  business logic is now moved into the client and becomes a client concern.
+- If your API needs to do complex business logic over the CRUD functionality,
+  please consider implementing custom endpoints instead of using generic endpoints
+  such as this.
+- There is currently no implementation for validation and DTO mapping,
+  this can be added later as the project updates.
+
+Certainly! Here is a "Getting Started" section for the `README.md` file, including NuGet installation and setup instructions.
+
+## Getting Started
+
+### Installation
+
+To install the `Russkyc.MinimalApi.Framework` package, you can use the NuGet Package Manager or the .NET CLI.
+
+#### Using .NET CLI
+
+Run the following command in your terminal:
+
+```sh
+dotnet add package Russkyc.MinimalApi.Framework
+```
+
+### Setup
+
+Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
+
+1. **Create a new ASP.NET Core Web API project** if you don't already have one.
+
+2. **Add the required services** in the `Program.cs` file:
+
+    ```csharp
+    using System.Reflection;
+    using Microsoft.EntityFrameworkCore;
+    using Russkyc.MinimalApi.Framework;
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+
+    var assembly = Assembly.GetExecutingAssembly();
+
+    // Add required db services
+    builder.Services.AddAllEntityServices(assembly, options => options.UseInMemoryDatabase("sample"));
+
+    var app = builder.Build();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    app.UseHttpsRedirection();
+
+    // Map CRUD endpoints
+    app.MapGroup("api")
+        .MapAllEntityEndpoints<int>(assembly);
+
+    app.Run();
+    ```
+
+### Setting-up entity classes
 
 All entity classes should inherit from the DbEntity<TKeyType> abstract class.
-Where `TKeyType` is the Id type of the entity. and all properties that
-need to be supported in the api query params during filtering should be
-marked with the `[Queryable]` attribute
+Where `TKeyType` is the Id type of the entity.
 
 **SampleEntity Class**
 
@@ -32,8 +107,10 @@ public class SampleEmbeddedEntity : DbEntity<int>
     public string Property2 { get; set; }
 }
 ```
+You now have a fully working EntityFrameworkCore backed MinimalApi CRUD project.
 
-### Program setup
+
+### Advanced Setup
 
 #### Option 1: Entity registration
 
@@ -94,13 +171,14 @@ app.MapGroup("api")
 app.Run();
 ```
 
-## Generated output
+### Advanced Route Options
 
-With that, this swagger definition is automatically generated
-and the CRUD endpoints are now useable. You should see something
-like this when you run the project.
+You can modify the endpoint options using the `routeOptionsAction` parameter. For example, to require authorization for all endpoints:
 
-<img src="Resources/preview.jpeg" style="width: 100%;" />
+```csharp
+app.MapGroup("api")
+    .MapAllEntityEndpoints<int>(assembly, routeOptions => routeOptions.RequireAuthorization());
+```
 
 ### Advanced Querying
 
@@ -233,16 +311,64 @@ Wildcards are supported in the `filters` query parameter to perform more flexibl
   ```http
   GET /api/sampleentity?filters=property=NOTEQUALS(20)
   ```
-## Potential use-cases for this project
-- Quick API prototyping
-- Small projects that only require CRUD functionality
-- Frontend Testing (if a backend API is needed)
 
-## Important things to consider before using this project
-- When using generic implementations like this on the server side,
-business logic is now moved into the client and becomes a client concern.
-- If your API needs to do complex business logic over the CRUD functionality,
-please consider implementing custom endpoints instead of using generic endpoints
-such as this.
-- There is currently no implementation for validation and DTO mapping,
-this can be added later as the project updates.
+### Batch Endpoints
+
+Batch endpoints are supported for adding, updating, and deleting multiple entities at once.
+
+#### Batch Insert
+
+```http
+POST /api/sampleentity/batch
+Content-Type: application/json
+
+[
+  {
+    "id": 1,
+    "property": "Entity 1",
+    "embeddedEntity": null
+  },
+  {
+    "id": 2,
+    "property": "Entity 2",
+    "embeddedEntity": null
+  }
+]
+```
+
+#### Batch Update
+
+```http
+PUT /api/sampleentity/batch
+Content-Type: application/json
+
+[
+  {
+    "id": 1,
+    "property": "Updated Entity 1",
+    "embeddedEntity": null
+  },
+  {
+    "id": 2,
+    "property": "Updated Entity 2",
+    "embeddedEntity": null
+  }
+]
+```
+
+#### Batch Update with Filters and Dynamic Fields
+
+```http
+PATCH /api/sampleentity/batch?filters=property=CONTAINS(Example)
+Content-Type: application/json
+
+{
+  "property": "Updated Value"
+}
+```
+
+#### Batch Delete
+
+```http
+DELETE /api/sampleentity/batch?filters=property=CONTAINS(Example)
+```
