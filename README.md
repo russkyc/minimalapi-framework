@@ -9,15 +9,16 @@ and for small apps that only require CRUD operations.
 
 ## Sample project
 
+All entity classes should inherit from the DbEntity<TKeyType> abstract class.
+Where `TKeyType` is the Id type of the entity. and all properties that
+need to be supported in the api query params during filtering should be
+marked with the `[Queryable]` attribute
+
 **SampleEntity Class**
 
 ```csharp
-[DbEntity]
-public class SampleEntity
+public class SampleEntity : DbEntity<int>
 {
-    [Key]
-    [Queryable]
-    public int Id { get; set; }
     [Queryable]
     public string Property { get; set; }
     public virtual SampleEmbeddedEntity EmbeddedEntity { get; set; }
@@ -26,11 +27,8 @@ public class SampleEntity
 **SampleEmbeddedEntity Class**
 
 ```csharp
-[DbEntity]
-public class SampleEmbeddedEntity
+public class SampleEmbeddedEntity : DbEntity<int>
 {
-    [Key]
-    public int Id { get; set; }
     public string Property2 { get; set; }
 }
 ```
@@ -61,8 +59,8 @@ app.UseHttpsRedirection();
 
 // Map CRUD endpoints
 app.MapGroup("api")
-        .MapEntityEndpoints<SampleEntity>();
-        .MapEntityEndpoints<SampleEmbeddedEntity>();
+        .MapEntityEndpoints<SampleEntity,int>();
+        .MapEntityEndpoints<SampleEmbeddedEntity,int>();
 
 app.Run();
 ```
@@ -91,7 +89,7 @@ app.UseHttpsRedirection();
 
 // Map CRUD endpoints
 app.MapGroup("api")
-        .MapAllEntityEndpoints(assembly);
+        .MapAllEntityEndpoints<int>(assembly);
 
 app.Run();
 ```

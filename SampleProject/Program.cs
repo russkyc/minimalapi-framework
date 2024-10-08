@@ -34,7 +34,7 @@ app.UseHttpsRedirection();
 // MapGroup is not required, we do this to make all the entity routes
 // have the `/api` prefix
 app.MapGroup("api")
-    .MapAllEntityEndpoints(assembly);
+    .MapAllEntityEndpoints<Guid>(assembly);
 
 // You can modify the endpoint options,
 // in this case, use this instead if you want the mapped entity routes
