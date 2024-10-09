@@ -40,8 +40,17 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 
 1. **Create a new ASP.NET Core Web API project** if you don't already have one.
 
-2. **Add the required services** in the `Program.cs` file:
+2. **Add the required services and API endpoint mappings** in the `Program.cs` file:
 
+    ```csharp
+    // 1. Entity Context Services
+    // `options.UseInMemoryDatabase() can be replaced with other EF Core Data Providers`
+    builder.Services.AddAllEntityServices(assembly, options => options.UseInMemoryDatabase("sample"));
+    // Map Entity CRUD Endpoints
+    app.MapGroup("api")
+        .MapAllEntityEndpoints<int>(assembly);
+    ```
+    This is how the full `Program.cs` might look like
     ```csharp
     using System.Reflection;
     using Microsoft.EntityFrameworkCore;
@@ -54,7 +63,7 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 
     var assembly = Assembly.GetExecutingAssembly();
 
-    // Add required db services
+    // Add Entity Context Services
     builder.Services.AddAllEntityServices(assembly, options => options.UseInMemoryDatabase("sample"));
 
     var app = builder.Build();
@@ -67,7 +76,7 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 
     app.UseHttpsRedirection();
 
-    // Map CRUD endpoints
+    // Map Entity CRUD Endpoints
     app.MapGroup("api")
         .MapAllEntityEndpoints<int>(assembly);
 
@@ -309,6 +318,7 @@ and set the `page`, `pageSize` query params as needed. as an example:
 ```http
 GET /api/sampleentity?paginate=true&page=1&pageSize=1
 ```
+
 This will now return a `PaginatedCollection` object with this json schema:
 
 ```json
