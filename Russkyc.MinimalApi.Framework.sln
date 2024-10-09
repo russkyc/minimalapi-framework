@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Russkyc.MinimalApi.Framewor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleProject", "SampleProject\SampleProject.csproj", "{AE6F8529-EB8E-404B-9277-561C9DF31361}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Russkyc.MinimalApi.Framework.Core", "Russkyc.MinimalApi.Framework.Core\Russkyc.MinimalApi.Framework.Core.csproj", "{CFFF7301-C311-44F9-A14A-81549D6E022C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{AE6F8529-EB8E-404B-9277-561C9DF31361}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AE6F8529-EB8E-404B-9277-561C9DF31361}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AE6F8529-EB8E-404B-9277-561C9DF31361}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFFF7301-C311-44F9-A14A-81549D6E022C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFFF7301-C311-44F9-A14A-81549D6E022C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFFF7301-C311-44F9-A14A-81549D6E022C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFFF7301-C311-44F9-A14A-81549D6E022C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using System.Text.Json;
+using Russkyc.MinimalApi.Framework.Core;
 
 namespace Russkyc.MinimalApi.Framework;
 

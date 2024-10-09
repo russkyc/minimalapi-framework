@@ -1,4 +1,4 @@
-﻿using Russkyc.MinimalApi.Framework;
+﻿using Russkyc.MinimalApi.Framework.Core;
 
 namespace SampleProject;
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework.Core;
 
 namespace Russkyc.MinimalApi.Framework;
 

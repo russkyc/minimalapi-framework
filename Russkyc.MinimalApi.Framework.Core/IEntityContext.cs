@@ -1,4 +1,4 @@
-﻿namespace Russkyc.MinimalApi.Framework;
+﻿namespace Russkyc.MinimalApi.Framework.Core;
 
 public interface IEntityContext<TModel>
     where TModel : class

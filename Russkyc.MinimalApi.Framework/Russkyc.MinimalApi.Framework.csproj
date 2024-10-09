@@ -19,7 +19,7 @@
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.5.0</Version>
+        <Version>0.6.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
@@ -43,6 +43,10 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8"/>
         <PackageReference Include="System.Linq.Dynamic.Core" Version="1.4.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Russkyc.MinimalApi.Framework.Core\Russkyc.MinimalApi.Framework.Core.csproj" />
     </ItemGroup>
 
 </Project>
