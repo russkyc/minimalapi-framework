@@ -93,7 +93,6 @@ Where `TKeyType` is the Id type of the entity.
 ```csharp
 public class SampleEntity : DbEntity<int>
 {
-    [Queryable]
     public string Property { get; set; }
     public virtual SampleEmbeddedEntity EmbeddedEntity { get; set; }
 }
