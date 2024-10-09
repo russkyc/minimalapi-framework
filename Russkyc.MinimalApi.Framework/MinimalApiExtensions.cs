@@ -42,9 +42,14 @@ public static class MinimalApiExtensions
 
         var getCollectionEndpoint = entityEndpointGroup
             .MapGet("/",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                async (
+                    [FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
                     [FromQuery] string? include,
-                    [FromQuery] string filter, [FromQuery] string? property) =>
+                    [FromQuery] string? filter,
+                    [FromQuery] string? property,
+                    [FromQuery] int page = 1,
+                    [FromQuery] int pageSize = 10,
+                    [FromQuery] bool paginate = false) =>
                 {
                     try
                     {
@@ -70,8 +75,31 @@ public static class MinimalApiExtensions
                             entities = entities.SelectProperties(property);
                         }
 
-                        var result = await entities.ToListAsync();
-                        return Results.Ok(result);
+                        if (paginate)
+                        {
+                            var totalRecords = await entities.CountAsync();
+                            var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+                            var paginatedEntities = await entities
+                                .Skip((page - 1) * pageSize)
+                                .Take(pageSize)
+                                .ToListAsync();
+
+                            var result = new PaginatedCollection<TEntity>
+                            {
+                                Data = paginatedEntities,
+                                Page = page,
+                                PageSize = pageSize,
+                                TotalRecords = totalRecords,
+                                TotalPages = totalPages
+                            };
+
+                            return Results.Ok(result);
+                        }
+                        else
+                        {
+                            var result = await entities.ToListAsync();
+                            return Results.Ok(result);
+                        }
                     }
                     catch (Exception e)
                     {
@@ -254,7 +282,7 @@ public static class MinimalApiExtensions
         var updateEntitiesWithFiltersEndpoint = entityEndpointGroup
             .MapPatch("/batch",
                 async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
-                    [FromQuery] string filter, [FromBody] Dictionary<string, object> updateFields) =>
+                    [FromQuery] string? filter, [FromBody] Dictionary<string, object> updateFields) =>
                 {
                     try
                     {
@@ -317,7 +345,7 @@ public static class MinimalApiExtensions
             .MapDelete("/batch",
                 async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
                     [FromQuery] string? include,
-                    [FromQuery] string filter) =>
+                    [FromQuery] string? filter) =>
                 {
                     try
                     {
