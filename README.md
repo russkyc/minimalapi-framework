@@ -250,56 +250,24 @@ Then you will have this result:
   }
 ]
 ```
-#### Filter query support
+#### Filter query support (with the help of DynamicExpressionParser in System.Linq.Dynamic.Core)
 
-Querying entities based on the property values can be done in this format `?filters=PROPERTNAME=VALUE`. As an example:
+entities can now be filtered with the `filter` queryParam and supports standard expressions. Parameters should be prefixed with `@` in order to be valid, eg; a parameter named `Content` should be used as `@Content`. Here are a few examples:
+
 ```http
-GET /api/sampleentity?filters=property=Example
+GET /api/sampleentity?filter=@Content.StartsWith("hello")
+```
+```http
+GET /api/sampleentity?filter=@Content.StartsWith("hi") && !@Content.Contains("user")
+```
+```http
+GET /api/sampleentity?filter=@Count == 1 || @Count > 8
+```
+```http
+GET /api/sampleentity?filter=@ContactPerson != null
 ```
 
-#### Wildcards support in filters parameter
-
-Wildcards are supported in the `filters` query parameter to perform more flexible searches:
-
-- **CONTAINS**: Matches entities where the property contains the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=CONTAINS(Example)
-  ```
-
-- **STARTSWITH**: Matches entities where the property starts with the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=STARTSWITH(Exa)
-  ```
-
-- **ENDSWITH**: Matches entities where the property ends with the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=ENDSWITH(mple)
-  ```
-
-- **GREATERTHAN**: Matches entities where the property is greater than the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=GREATERTHAN(10)
-  ```
-
-- **LESSTHAN**: Matches entities where the property is less than the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=LESSTHAN(20)
-  ```
-
-- **GREATERTHANOREQUAL**: Matches entities where the property is greater than or equal to the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=GREATERTHANOREQUAL(20)
-  ```
-
-- **LESSTHANOREQUAL**: Matches entities where the property is less than or equal to the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=LESSTHANOREQUAL(20)
-  ```
-
-- **NOTEQUALS**: Matches entities where the property is not equal to the specified value.
-  ```http
-  GET /api/sampleentity?filters=property=NOTEQUALS(20)
-  ```
+These are visualized for readability, in actual use, the filter value should be Url Encoded.
 
 ### Batch Endpoints
 
@@ -348,7 +316,7 @@ Content-Type: application/json
 #### Batch Update with Filters and Dynamic Fields
 
 ```http
-PATCH /api/sampleentity/batch?filters=property=CONTAINS(Example)
+PATCH /api/sampleentity/batch?filter=@property.Contains("Old")
 Content-Type: application/json
 
 {
@@ -359,7 +327,7 @@ Content-Type: application/json
 #### Batch Delete
 
 ```http
-DELETE /api/sampleentity/batch?filters=property=CONTAINS(Example)
+DELETE /api/sampleentity/batch?filter=@Count > 8
 ```
 
 ## Important things to consider

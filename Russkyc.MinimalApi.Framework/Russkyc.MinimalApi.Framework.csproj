@@ -6,8 +6,12 @@
         <Nullable>enable</Nullable>
         <OutputType>library</OutputType>
         <UserSecretsId>07fb0dbb-8872-4f52-a7b7-67262f8f411e</UserSecretsId>
-        <PackageReleaseNotes>OPTIMIZATIONS:
-- Move to request-scoped DbContext(IDbContextFactory) for thread safety</PackageReleaseNotes>
+        <PackageReleaseNotes>BREAKING:
+
+- `filters` queryParam is renamed to `filter`
+- Added dynamic expression support to the filter using System.Linq.Dynamic.Core
+
+See documentation for updated usage examples</PackageReleaseNotes>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -20,7 +24,7 @@
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.3.1</Version>
+        <Version>0.4.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
@@ -43,6 +47,7 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8"/>
+        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.4.5" />
     </ItemGroup>
 
 </Project>
