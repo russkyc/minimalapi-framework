@@ -43,10 +43,16 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 2. **Add the required services and API endpoint mappings** in the `Program.cs` file:
 
     ```csharp
+    // Used by reflection to know where to find entity classes
+    var assembly = Assembly.GetExecutingAssembly();
+
     // 1. Entity Context Services
-    // `options.UseInMemoryDatabase() can be replaced with other EF Core Data Providers`
+    // `options.UseInMemoryDatabase()` can be replaced with other EF Core Data Providers
     builder.Services.AddAllEntityServices(assembly, options => options.UseInMemoryDatabase("sample"));
-    // Map Entity CRUD Endpoints
+    
+    // 2. Map Entity CRUD Endpoints
+    // `MapGroup()` is not required, used to add the "/api" prefix.
+    // Can simply be `app.MapAllEntityEndpoints<int>(assembly);`
     app.MapGroup("api")
         .MapAllEntityEndpoints<int>(assembly);
     ```
