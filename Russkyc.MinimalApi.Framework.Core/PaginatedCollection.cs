@@ -1,6 +1,6 @@
-﻿namespace Russkyc.MinimalApi.Framework;
+﻿namespace Russkyc.MinimalApi.Framework.Core;
 
-public class PaginatedCollection<T> where T : class
+public class PaginatedCollection<T> : IPaginatedCollection<T> where T : class
 {
     public required ICollection<T> Data { get; set; }
     public int Page { get; set; }
