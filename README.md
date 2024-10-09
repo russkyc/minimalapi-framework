@@ -1,4 +1,4 @@
-﻿<h2 align="center">Russkyc.MinimalApi.Framework - A generic MinimalApi Crud Generator for EntityFrameworkCore</h2>
+﻿<h2 align="center">Russkyc.MinimalApi.Framework - A Generic API Crud Generator for EntityFrameworkCore</h2>
 
 <p align="center">
     <img src="https://img.shields.io/nuget/v/Russkyc.MinimalApi.Framework?color=1f72de" alt="Nuget">
@@ -9,8 +9,8 @@
 </p>
 
 This dynamically generates a generic CRUD API implementation
-backed with Entity Framework Core and Minimal API. This can be used for quick prototyping
-and for small apps that only require CRUD operations.
+backed with Entity Framework Core and Minimal API. This can be used
+to create a quick backend for prototyping apps that use CRUD operations.
 
 <img src="Resources/swagger.jpeg" style="width: 100%;" />
 
