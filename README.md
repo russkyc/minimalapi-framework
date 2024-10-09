@@ -15,6 +15,7 @@ and for small apps that only require CRUD operations.
 <img src="Resources/swagger.jpeg" style="width: 100%;" />
 
 ## Potential use-cases
+
 - Quick API prototyping
 - Small projects that only require CRUD functionality
 - Frontend Testing (if a backend API is needed)
@@ -88,6 +89,7 @@ public class SampleEntity : DbEntity<int>
     public virtual SampleEmbeddedEntity EmbeddedEntity { get; set; }
 }
 ```
+
 **SampleEmbeddedEntity Class**
 
 ```csharp
@@ -96,8 +98,8 @@ public class SampleEmbeddedEntity : DbEntity<int>
     public string Property2 { get; set; }
 }
 ```
-You now have a fully working EntityFrameworkCore backed MinimalApi CRUD project.
 
+You now have a fully working EntityFrameworkCore backed MinimalApi CRUD project.
 
 ### Advanced Setup
 
@@ -162,7 +164,8 @@ app.Run();
 
 ### Advanced Route Options
 
-You can modify the endpoint options using the `routeOptionsAction` parameter. For example, to require authorization for all endpoints:
+You can modify the endpoint options using the `routeOptionsAction` parameter. For example, to require authorization for
+all endpoints:
 
 ```csharp
 app.MapGroup("api")
@@ -250,24 +253,79 @@ Then you will have this result:
   }
 ]
 ```
+
 #### Filter query support (with the help of DynamicExpressionParser in System.Linq.Dynamic.Core)
 
-entities can now be filtered with the `filter` queryParam and supports standard expressions. Parameters should be prefixed with `@` in order to be valid, eg; a parameter named `Content` should be used as `@Content`. Here are a few examples:
+entities can now be filtered with the `filter` queryParam and supports standard expressions. Parameters should be
+prefixed with `@` in order to be valid, eg; a parameter named `Content` should be used as `@Content`. Here are a few
+examples:
 
 ```http
 GET /api/sampleentity?filter=@Content.StartsWith("hello")
 ```
+
 ```http
 GET /api/sampleentity?filter=@Content.StartsWith("hi") && !@Content.Contains("user")
 ```
+
 ```http
 GET /api/sampleentity?filter=@Count == 1 || @Count > 8
 ```
+
 ```http
 GET /api/sampleentity?filter=@ContactPerson != null
 ```
 
 These are visualized for readability, in actual use, the filter value should be Url Encoded.
+
+### Pagination
+
+By default pagination is disabled and the query collection response returns something like this
+
+```jaon
+[
+  {
+    "id": 1,
+    "property": "Entity 1",
+    "embeddedEntity": {
+      "id": 1,
+      "property2": "Embedded Entity 1"
+    }
+  },
+  {
+    "id": 2,
+    "property": "Entity 2",
+    "embeddedEntity": {
+      "id": 2,
+      "property2": "Embedded Entity 2"
+    }
+  }
+]
+```
+
+To enable pagination, set the `paginate` query param to true
+and set the `page`, `pageSize` query params as needed. as an example:
+
+```http
+GET /api/sampleentity?paginate=true&page=1&pageSize=1
+```
+This will now return a `PaginatedCollection` object with this json schema:
+
+```json
+{
+  "data": [
+    {
+      "property": "Entity 1",
+      "embeddedEntity": null,
+      "id": "84e93f60-b2bc-4303-af0a-c51c205addb9"
+    }
+  ],
+  "page": 1,
+  "pageSize": 1,
+  "totalRecords": 2,
+  "totalPages": 2
+}
+```
 
 ### Batch Endpoints
 
@@ -331,6 +389,7 @@ DELETE /api/sampleentity/batch?filter=@Count > 8
 ```
 
 ## Important things to consider
+
 - When using generic implementations like this on the server side,
   business logic is now moved into the client and becomes a client concern.
 - If your API needs to do complex business logic over the CRUD functionality,
