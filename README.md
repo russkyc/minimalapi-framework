@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/nuget/dt/Russkyc.MinimalApi.Framework">
 </p>
 
-This dynamically generates a generic CRUD API implementation
+Dynamically generates a generic CRUD API implementation
 backed with Entity Framework Core and Minimal API. This can be used
 to create a quick backend for prototyping apps that use CRUD operations.
 
