@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,50 +37,11 @@ internal static class QueryExtensions
         return query;
     }
 
-    internal static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, FilterDictionary filters) where T : class
+    internal static IQueryable<T> ApplyFilter<T>(this IQueryable<T> query, string filter) where T : class
     {
-        var entityType = typeof(T);
-        var parameter = Expression.Parameter(entityType, "e");
-
-        foreach (var filter in filters)
-        {
-            try
-            {
-                var propertyInfo = entityType.GetProperty(filter.Key,
-                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                if (propertyInfo == null)
-                {
-                    continue;
-                }
-
-                var property = Expression.Property(parameter, propertyInfo);
-                var value = Expression.Constant(Convert.ChangeType(filter.Value.Value, propertyInfo.PropertyType));
-
-                Expression comparison = filter.Value.Operation switch
-                {
-                    "CONTAINS" => Expression.Call(property, "Contains", null, value),
-                    "STARTSWITH" => Expression.Call(property, "StartsWith", null, value),
-                    "ENDSWITH" => Expression.Call(property, "EndsWith", null, value),
-                    "GREATERTHAN" => Expression.GreaterThan(property, value),
-                    "LESSTHAN" => Expression.LessThan(property, value),
-                    "GREATERTHANOREQUAL" => Expression.GreaterThanOrEqual(property, value),
-                    "LESSTHANOREQUAL" => Expression.LessThanOrEqual(property, value),
-                    "NOTEQUALS" => Expression.NotEqual(property, value),
-                    _ => Expression.Equal(property, value),
-                };
-
-                var lambda = Expression.Lambda<Func<T, bool>>(comparison, parameter);
-                query = query.Where(lambda);
-            }
-            catch (InvalidOperationException)
-            {
-                // Skip applying the filter if an InvalidOperationException occurs
-            }
-            catch (FormatException)
-            {
-                // Skip applying the filter if a FormatException occurs
-            }
-        }
+        var parameter = Expression.Parameter(typeof(T), "entity");
+        var expression = DynamicExpressionParser.ParseLambda([parameter], typeof(bool), filter);
+        query = query.Where(expression);
 
         return query;
     }

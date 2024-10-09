@@ -42,26 +42,41 @@ public static class MinimalApiExtensions
 
         var getCollectionEndpoint = entityEndpointGroup
             .MapGet("/",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromQuery] string? include,
-                    [FromQuery] FilterDictionary? filters, [FromQuery] string? property) =>
+                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                    [FromQuery] string? include,
+                    [FromQuery] string filter, [FromQuery] string? property) =>
                 {
-                    await using var context = await contextFactory.CreateDbContextAsync();
-                    
-                    var entities = context.Entities
-                        .AsNoTracking()
-                        .ApplyIncludes(include);
-                    if (filters is not null)
+                    try
                     {
-                        entities = entities.ApplyFilters(filters);
-                    }
+                        await using var context = await contextFactory.CreateDbContextAsync();
 
-                    if (property is not null)
+                        var entities = context.Entities
+                            .AsNoTracking()
+                            .ApplyIncludes(include);
+                        if (!string.IsNullOrWhiteSpace(filter))
+                        {
+                            try
+                            {
+                                entities = entities.ApplyFilter(filter);
+                            }
+                            catch (Exception e)
+                            {
+                                return Results.BadRequest(e.Message);
+                            }
+                        }
+
+                        if (property is not null)
+                        {
+                            entities = entities.SelectProperties(property);
+                        }
+
+                        var result = await entities.ToListAsync();
+                        return Results.Ok(result);
+                    }
+                    catch (Exception e)
                     {
-                        entities = entities.SelectProperties(property);
+                        return Results.BadRequest(e.Message);
                     }
-
-                    var result = await entities.ToListAsync();
-                    return Results.Ok(result);
                 })
             .WithName($"Get a {mapGroupName} collection")
             .WithTags(mapGroupName)
@@ -73,183 +88,265 @@ public static class MinimalApiExtensions
                     [FromQuery] string? include,
                     [FromQuery] string? property) =>
                 {
-                    await using var context = await contextFactory.CreateDbContextAsync();
-
-                    var query = context.Entities
-                        .AsNoTracking()
-                        .ApplyIncludes(include)
-                        .SelectProperties(property);
-                    var entity =
-                        await query.FirstOrDefaultAsync(entity => ((IDbEntity<TKeyType>)entity).Id!.Equals(id));
-                    if (entity == null)
+                    try
                     {
-                        return Results.NotFound();
-                    }
+                        await using var context = await contextFactory.CreateDbContextAsync();
 
-                    return Results.Ok(entity);
+                        var query = context.Entities
+                            .AsNoTracking()
+                            .ApplyIncludes(include)
+                            .SelectProperties(property);
+                        var entity =
+                            await query.FirstOrDefaultAsync(entity => ((IDbEntity<TKeyType>)entity).Id!.Equals(id));
+                        if (entity == null)
+                        {
+                            return Results.NotFound();
+                        }
+
+                        return Results.Ok(entity);
+                    }
+                    catch (Exception e)
+                    {
+                        return Results.BadRequest(e.Message);
+                    }
                 })
             .WithDescription($"Get a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var addEntityEndpoint = entityEndpointGroup
-            .MapPost("/", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromBody] TEntity entity) =>
-            {
-                await using var context = await contextFactory.CreateDbContextAsync();
-
-                var existingEntity = await context.Entities.FindAsync(((IDbEntity<TKeyType>)entity).Id);
-                if (existingEntity != null)
+            .MapPost("/",
+                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                    [FromBody] TEntity entity) =>
                 {
-                    return Results.Conflict("An entity with the same key already exists.");
-                }
+                    try
+                    {
+                        await using var context = await contextFactory.CreateDbContextAsync();
 
-                var entryEntity = await context.Entities
-                    .AddAsync(entity);
-                await context.SaveChangesAsync();
-                return Results.Ok(entryEntity.Entity);
-            })
+                        var existingEntity = await context.Entities.FindAsync(((IDbEntity<TKeyType>)entity).Id);
+                        if (existingEntity != null)
+                        {
+                            return Results.Conflict("An entity with the same key already exists.");
+                        }
+
+                        var entryEntity = await context.Entities
+                            .AddAsync(entity);
+                        await context.SaveChangesAsync();
+                        return Results.Ok(entryEntity.Entity);
+                    }
+                    catch (Exception e)
+                    {
+                        return Results.BadRequest(e.Message);
+                    }
+                })
             .WithDescription($"Add a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var updateEntityEndpoint = entityEndpointGroup
-            .MapPatch("/", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromBody] TEntity entity) =>
-            {
-                await using var context = await contextFactory.CreateDbContextAsync();
+            .MapPatch("/",
+                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                    [FromBody] TEntity entity) =>
+                {
+                    try
+                    {
+                        await using var context = await contextFactory.CreateDbContextAsync();
 
-                var entryEntity = context.Entities
-                    .Update(entity);
-                await context.SaveChangesAsync();
-                return Results.Ok(entryEntity.Entity);
-            })
+                        var entryEntity = context.Entities
+                            .Update(entity);
+                        await context.SaveChangesAsync();
+                        return Results.Ok(entryEntity.Entity);
+                    }
+                    catch (Exception e)
+                    {
+                        return Results.BadRequest(e.Message);
+                    }
+                })
             .WithDescription($"Update a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var deleteEntityEndpoint = entityEndpointGroup
             .MapDelete("/{id}",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromRoute] TKeyType id) =>
+                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                    [FromRoute] TKeyType id) =>
                 {
-                    await using var context = await contextFactory.CreateDbContextAsync();
-
-                    var entity = await context.Entities
-                        .FindAsync(id);
-                    if (entity is null)
+                    try
                     {
-                        return Results.NotFound();
-                    }
+                        await using var context = await contextFactory.CreateDbContextAsync();
 
-                    context.Entities.Remove(entity);
-                    await context.SaveChangesAsync();
-                    return Results.Ok(entity);
+                        var entity = await context.Entities
+                            .FindAsync(id);
+                        if (entity is null)
+                        {
+                            return Results.NotFound();
+                        }
+
+                        context.Entities.Remove(entity);
+                        await context.SaveChangesAsync();
+                        return Results.Ok(entity);
+                    }
+                    catch (Exception e)
+                    {
+                        return Results.BadRequest(e.Message);
+                    }
                 })
             .WithDescription($"Delete a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var addEntitiesEndpoint = entityEndpointGroup
-            .MapPost("/batch", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromBody] TEntity[] entities) =>
+            .MapPost("/batch", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                [FromBody] TEntity[] entities) =>
             {
-                await using var context = await contextFactory.CreateDbContextAsync();
-
-                var entityEntries = new List<TEntity>();
-                foreach (var entity in entities)
+                try
                 {
-                    var existingEntity = await context.Entities.FindAsync(((IDbEntity<TKeyType>)entity).Id);
-                    if (existingEntity != null)
+                    await using var context = await contextFactory.CreateDbContextAsync();
+
+                    var entityEntries = new List<TEntity>();
+                    foreach (var entity in entities)
                     {
-                        return Results.Conflict("An entity with the same key already exists.");
+                        var existingEntity = await context.Entities.FindAsync(((IDbEntity<TKeyType>)entity).Id);
+                        if (existingEntity != null)
+                        {
+                            return Results.Conflict("An entity with the same key already exists.");
+                        }
+
+                        var entryEntity = await context.Entities
+                            .AddAsync(entity);
+                        entityEntries.Add(entryEntity.Entity);
                     }
 
-                    var entryEntity = await context.Entities
-                        .AddAsync(entity);
-                    entityEntries.Add(entryEntity.Entity);
+                    await context.SaveChangesAsync();
+                    return Results.Ok(entityEntries);
                 }
-
-                await context.SaveChangesAsync();
-                return Results.Ok(entityEntries);
+                catch (Exception e)
+                {
+                    return Results.BadRequest(e.Message);
+                }
             })
             .WithDescription($"Batch Insert {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var updateEntitiesEndpoint = entityEndpointGroup
-            .MapPut("/batch", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromBody] TEntity[] entities) =>
+            .MapPut("/batch", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                [FromBody] TEntity[] entities) =>
             {
-                await using var context = await contextFactory.CreateDbContextAsync();
+                try
+                {
+                    await using var context = await contextFactory.CreateDbContextAsync();
 
-                context.Entities
-                    .UpdateRange(entities);
-                var result = await context.SaveChangesAsync();
-                return Results.Ok($"Updated {result} items");
+                    context.Entities
+                        .UpdateRange(entities);
+                    var result = await context.SaveChangesAsync();
+                    return Results.Ok($"Updated {result} items");
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(e.Message);
+                }
             })
             .WithDescription($"Batch update {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
-        
+
         var updateEntitiesWithFiltersEndpoint = entityEndpointGroup
-        .MapPatch("/batch",
-            async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromQuery] FilterDictionary? filters, [FromBody] Dictionary<string, object> updateFields) =>
-            {
-                await using var context = await contextFactory.CreateDbContextAsync();
-
-                var entities = context.Entities.AsQueryable();
-
-                if (filters is not null)
+            .MapPatch("/batch",
+                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                    [FromQuery] string filter, [FromBody] Dictionary<string, object> updateFields) =>
                 {
-                    entities = entities.ApplyFilters(filters);
-                }
-
-                var entityList = await entities.ToListAsync();
-
-                foreach (var entity in entityList)
-                {
-                    foreach (var field in updateFields)
+                    try
                     {
-                        var property = typeof(TEntity).GetProperty(field.Key, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                        if (property != null)
+                        await using var context = await contextFactory.CreateDbContextAsync();
+
+                        var entities = context.Entities.AsQueryable();
+
+                        if (!string.IsNullOrWhiteSpace(filter))
                         {
                             try
                             {
-                                var jsonValue = JsonSerializer.Serialize(field.Value);
-                                var convertedValue = JsonSerializer.Deserialize(jsonValue, property.PropertyType);
-                                property.SetValue(entity, convertedValue);
+                                entities = entities.ApplyFilter(filter);
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
-                                return Results.BadRequest($"Error setting property {field.Key} to {JsonSerializer.Serialize(field.Value)}");
+                                return Results.BadRequest(e.Message);
                             }
                         }
-                    }
-                }
 
-                context.Entities.UpdateRange(entityList);
-                var result = await context.SaveChangesAsync();
-                return Results.Ok($"Updated {result} items");
-            })
-        .WithDescription($"Batch update {mapGroupName} with filters and dynamic fields")
-        .WithTags(mapGroupName)
-        .WithOpenApi();
+                        var entityList = await entities.ToListAsync();
+
+                        foreach (var entity in entityList)
+                        {
+                            foreach (var field in updateFields)
+                            {
+                                var property = typeof(TEntity).GetProperty(field.Key,
+                                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+                                if (property != null)
+                                {
+                                    try
+                                    {
+                                        var jsonValue = JsonSerializer.Serialize(field.Value);
+                                        var convertedValue =
+                                            JsonSerializer.Deserialize(jsonValue, property.PropertyType);
+                                        property.SetValue(entity, convertedValue);
+                                    }
+                                    catch (Exception)
+                                    {
+                                        return Results.BadRequest(
+                                            $"Error setting property {field.Key} to {JsonSerializer.Serialize(field.Value)}");
+                                    }
+                                }
+                            }
+                        }
+
+                        context.Entities.UpdateRange(entityList);
+                        var result = await context.SaveChangesAsync();
+                        return Results.Ok($"Updated {result} items");
+                    }
+                    catch (Exception e)
+                    {
+                        return Results.BadRequest(e.Message);
+                    }
+                })
+            .WithDescription($"Batch update {mapGroupName} with filters and dynamic fields")
+            .WithTags(mapGroupName)
+            .WithOpenApi();
 
         var deleteEntitiesEndpoint = entityEndpointGroup
             .MapDelete("/batch",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromQuery] string? include,
-                    [FromQuery] FilterDictionary? filters) =>
+                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                    [FromQuery] string? include,
+                    [FromQuery] string filter) =>
                 {
-                    await using var context = await contextFactory.CreateDbContextAsync();
-
-                    var entities = context.Entities
-                        .AsNoTracking()
-                        .ApplyIncludes(include);
-
-                    if (filters is not null)
+                    try
                     {
-                        entities = entities.ApplyFilters(filters);
-                    }
+                        await using var context = await contextFactory.CreateDbContextAsync();
 
-                    context.Entities.RemoveRange(entities);
-                    var result = await context.SaveChangesAsync();
-                    return Results.Ok($"Deleted {result} items");
+                        var entities = context.Entities
+                            .AsNoTracking()
+                            .ApplyIncludes(include);
+
+                        if (!string.IsNullOrWhiteSpace(filter))
+                        {
+                            try
+                            {
+                                entities = entities.ApplyFilter(filter);
+                            }
+                            catch (Exception e)
+                            {
+                                return Results.BadRequest(e.Message);
+                            }
+                        }
+
+                        context.Entities.RemoveRange(entities);
+                        var result = await context.SaveChangesAsync();
+                        return Results.Ok($"Deleted {result} items");
+                    }
+                    catch (Exception e)
+                    {
+                        return Results.BadRequest(e.Message);
+                    }
                 })
             .WithDescription($"Batch delete {mapGroupName} based on query parameters")
             .WithTags(mapGroupName)
