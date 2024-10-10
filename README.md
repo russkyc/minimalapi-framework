@@ -14,8 +14,8 @@ to create a quick backend for prototyping apps that use CRUD operations.
 
 <img src="Resources/swagger.jpeg" style="width: 100%;" />
 
-> ## ✨ What's New:
-> - Database Management (Ensure Creation & How to do Migrations) [Read More](#database-management)
+> ### ✨ What's New:
+> Ensure Database Creation(EnsureCreated, DeleteAndCreate) [learn more...](#database-management)
 
 ## Potential use-cases
 
