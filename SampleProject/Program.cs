@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Russkyc.MinimalApi.Framework;
+using Russkyc.MinimalApi.Framework.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,8 @@ var assembly = Assembly.GetExecutingAssembly();
 // We can do this automatically by using this extension method
 // NOTE: We are using in memory for this example, but you can use all other EF Core providers
 builder.Services.AddAllEntityServices(assembly,
-    options => options.UseInMemoryDatabase("sample"));
+    options => options.UseSqlite("Data Source=test.sqlite"),
+    databaseAction: DatabaseAction.EnsureCreated);
 
 var app = builder.Build();
 

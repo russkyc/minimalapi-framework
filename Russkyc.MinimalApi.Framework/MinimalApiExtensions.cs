@@ -8,31 +8,6 @@ namespace Russkyc.MinimalApi.Framework;
 
 public static class MinimalApiExtensions
 {
-    public static void AddEntityServices<TEntity>(this IServiceCollection serviceCollection,
-        Action<DbContextOptionsBuilder>? optionsAction = null,
-        ServiceLifetime serviceLifetime = ServiceLifetime.Singleton) where TEntity : class
-    {
-        serviceCollection.AddDbContextFactory<EntityContext<TEntity>>(optionsAction, serviceLifetime);
-    }
-
-    public static void AddAllEntityServices(this IServiceCollection serviceCollection, Assembly assembly,
-        Action<DbContextOptionsBuilder>? optionsAction = null,
-        ServiceLifetime contextLifetime = ServiceLifetime.Singleton)
-    {
-        var entityTypes = assembly
-            .GetTypes()
-            .Where(t => t.GetInterfaces()
-                .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDbEntity<>)));
-
-        foreach (var entityType in entityTypes)
-        {
-            var method = typeof(MinimalApiExtensions).GetMethod(nameof(AddEntityServices))?
-                .MakeGenericMethod(entityType);
-            if (optionsAction != null)
-                method?.Invoke(null, [serviceCollection, optionsAction, contextLifetime]);
-        }
-    }
-
     public static void MapEntityEndpoints<TEntity, TKeyType>(this IEndpointRouteBuilder endpointBuilder,
         string? groupName = null,
         Action<IEndpointConventionBuilder>? routeOptionsAction = null)

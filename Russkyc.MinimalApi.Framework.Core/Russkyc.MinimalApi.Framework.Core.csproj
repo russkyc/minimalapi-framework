@@ -4,6 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PackageReleaseNotes>Add database creation (EnsureCreated, DeleteAndCreate). Learn more in the updated documentation</PackageReleaseNotes>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -16,7 +17,7 @@
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.6.0</Version>
+        <Version>0.7.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
