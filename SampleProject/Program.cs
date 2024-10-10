@@ -17,7 +17,8 @@ var assembly = Assembly.GetExecutingAssembly();
 
 // The entity endpoints need an EF Core DBContext implementation for each entity
 // We can do this automatically by using this extension method
-// NOTE: We are using in memory for this example, but you can use all other EF Core providers
+// NOTE: We are using sqlite for this example, but you can use all other EF Core providers
+// For database creation, the `databaseAction` sets how it will be created.
 builder.Services.AddAllEntityServices(assembly,
     options => options.UseSqlite("Data Source=test.sqlite"),
     databaseAction: DatabaseAction.EnsureCreated);
