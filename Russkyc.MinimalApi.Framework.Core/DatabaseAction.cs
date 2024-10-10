@@ -4,6 +4,5 @@ public enum DatabaseAction
 {
     None,
     EnsureCreated,
-    EnsureDeleted,
     DeleteAndCreate
 }

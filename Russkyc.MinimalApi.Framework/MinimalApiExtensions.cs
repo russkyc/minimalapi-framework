@@ -26,9 +26,6 @@ public static class MinimalApiExtensions
                 case DatabaseAction.EnsureCreated:
                     context.CreateDatabase();
                     break;
-                case DatabaseAction.EnsureDeleted:
-                    context.DeleteDatabase();
-                    break;
                 case DatabaseAction.DeleteAndCreate:
                     context.DeleteDatabase();
                     context.CreateDatabase();

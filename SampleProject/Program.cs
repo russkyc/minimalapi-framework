@@ -20,7 +20,7 @@ var assembly = Assembly.GetExecutingAssembly();
 // NOTE: We are using in memory for this example, but you can use all other EF Core providers
 builder.Services.AddAllEntityServices(assembly,
     options => options.UseSqlite("Data Source=test.sqlite"),
-    databaseAction: DatabaseAction.DeleteAndCreate);
+    databaseAction: DatabaseAction.EnsureCreated);
 
 var app = builder.Build();
 
