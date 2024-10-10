@@ -179,6 +179,30 @@ app.MapGroup("api")
 app.Run();
 ```
 
+### Database Initialization
+
+These are different database action types that can be defined in the `AddAllEntityServices` or `AddEntityServices`
+extensions using the `databaseAction` parameter:
+
+- None - Default Action
+- DatabaseAction.EnsureCreated - Run `Database.EnsureCreated()`
+- DatabaseAction.DeleteAndCreate - Run `Database.EnsureDeleted()` before `Database.EnsureCreated()`
+
+As an example:
+
+```csharp
+builder.Services.AddAllEntityServices(assembly,
+    options => options.UseSqlite("Data Source=test.sqlite"),
+    databaseAction: DatabaseAction.DeleteAndCreate);
+```
+
+This ensures that a fresh database is used in every run. If you only need
+to set the database once, `DatabaseAction.EnsureCreated` is the recommended option
+
+> [!NOTE]  
+> There are currently no official ways of using migrations with this project.
+>
+
 ### Advanced Route Options
 
 You can modify the endpoint options using the `routeOptionsAction` parameter. For example, to require authorization for
@@ -405,32 +429,6 @@ Content-Type: application/json
 ```http
 DELETE /api/sampleentity/batch?filter=@Count > 8
 ```
-
-## Database Management
-
-### Database Initialization
-
-These are different database action types that can be defined in the `AddAllEntityServices` or `AddEntityServices`
-extensions using the `databaseAction` parameter:
-
-- None - Default Action
-- DatabaseAction.EnsureCreated - Run `Database.EnsureCreated()`
-- DatabaseAction.DeleteAndCreate - Run `Database.EnsureDeleted()` before `Database.EnsureCreated()`
-
-As an example:
-
-```csharp
-builder.Services.AddAllEntityServices(assembly,
-    options => options.UseSqlite("Data Source=test.sqlite"),
-    databaseAction: DatabaseAction.DeleteAndCreate);
-```
-
-This ensures that a fresh database is used in every run. If you only need
-to set the database once, `DatabaseAction.EnsureCreated` is the recommended option
-
-> [!NOTE]  
-> There are currently no official ways of using migrations with this project.
-> 
 
 ## Important things to consider
 
