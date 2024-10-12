@@ -1,7 +1,6 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Russkyc.MinimalApi.Framework;
-using Russkyc.MinimalApi.Framework.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
