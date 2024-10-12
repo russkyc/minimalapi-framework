@@ -73,7 +73,7 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
     var assembly = Assembly.GetExecutingAssembly();
 
     // Add Entity Context Services
-    builder.Services.AddAllEntityServices(assembly, options => options.UseInMemoryDatabase("sample"));
+    builder.Services.AddDbContextService(assembly, options => options.UseInMemoryDatabase("sample"));
 
     var app = builder.Build();
 
@@ -156,7 +156,7 @@ extensions using the `databaseAction` parameter:
 As an example:
 
 ```csharp
-builder.Services.AddAllEntityServices(assembly,
+builder.Services.AddDbContextService(assembly,
     options => options.UseSqlite("Data Source=test.sqlite"),
     databaseAction: DatabaseAction.DeleteAndCreate);
 ```
