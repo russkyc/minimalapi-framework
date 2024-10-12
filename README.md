@@ -15,7 +15,7 @@ to create a quick backend for prototyping apps that use CRUD operations.
 <img src="Resources/swagger.jpeg" style="width: 100%;" />
 
 > ### ✨ What's New:
-> Ensure Database Creation(EnsureCreated, DeleteAndCreate) [learn more...](#database-management)
+> Migrations support (using custom DbContext implementation) [learn more...](#advanced-setup)
 
 ## Potential use-cases
 
