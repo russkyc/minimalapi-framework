@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// NOTE: Use the assembly where the entity classes are contained.
 var assembly = Assembly.GetExecutingAssembly();
 
 // The entity endpoints uses a BaseDbContext to access the database,
