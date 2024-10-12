@@ -1,7 +1,6 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Russkyc.MinimalApi.Framework;
-using Russkyc.MinimalApi.Framework.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,16 +12,26 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// NOTE: Use the assembly where the entity classes are contained.
 var assembly = Assembly.GetExecutingAssembly();
 
-// The entity endpoints need an EF Core DBContext implementation for each entity
-// We can do this automatically by using this extension method
+// The entity endpoints uses a BaseDbContext to access the database,
+// We can register this automatically by using this extension method
 // NOTE: We are using sqlite for this example, but you can use all other EF Core providers
 // For database creation, the `databaseAction` sets how it will be created.
-builder.Services.AddAllEntityServices(assembly,
-    options => options.UseSqlite("Data Source=test.sqlite"),
-    databaseAction: DatabaseAction.EnsureCreated);
+// By default, it is set to `DatabaseAction.EnsureCreated`
+builder.Services.AddDbContextService(assembly,
+    options => options.UseSqlite("Data Source=test.sqlite"));
 
+// To use migrations, we can also define and register our own DbContext using a generic overload
+// `AddDbContextService<T>()`. The custom DbContext need to inherit from `BaseDbContext` and
+// ensure that all entity DbSets are implemented with naming as `<EntityType>Collection`
+// eg;`public DbSet<SampleEntity> SampleEntityCollection { get; set; }`
+// An example implementation can be found at `CustomDbContext.cs`
+
+// builder.Services.AddDbContextService<CustomDbContext>(
+//     options => options.UseSqlite("Data Source=test.sqlite"),
+//     databaseAction: DatabaseAction.EnsureCreated);
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

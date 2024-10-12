@@ -51,7 +51,7 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 
     // 1. Entity Context Services
     // `options.UseInMemoryDatabase()` can be replaced with other EF Core Data Providers
-    builder.Services.AddAllEntityServices(assembly, options => options.UseInMemoryDatabase("sample"));
+    builder.Services.AddDbContextService(assembly, options => options.UseInMemoryDatabase("sample"));
     
     // 2. Map Entity CRUD Endpoints
     // `MapGroup()` is not required, used to add the "/api" prefix.
@@ -120,63 +120,28 @@ You now have a fully working EntityFrameworkCore backed MinimalApi CRUD project.
 
 ### Advanced Setup
 
-#### Option 1: Entity registration
+#### Custom DbContext (Useful for migrations support)
+
+To support database migrations, we can create a custom dbcontext class that inherits from `BaseDbContext`
 
 ```csharp
-var builder = youbApplication.CreateBuilder(args);
+using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework;
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+namespace SampleProject;
 
-// Add required db services
-builder.Services.AddEntityServices<SampleEntity>(options => options.UseInMemoryDatabase("sample"));
-builder.Services.AddEntityServices<SampleEmbeddedEntity>(options => options.UseInMemoryDatabase("sample"));
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+public class CustomDbContext : BaseDbContext
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    public CustomDbContext(DbContextOptions options) : base(options)
+    {
+    }
+    
+    // Entity collections are required to be defined
+    // using the naming convention `<ClassName>Collection`
+    
+    public DbSet<SampleEmbeddedEntity> SampleEmbeddedEntityCollection { get; set; }
+    public DbSet<SampleEntity> SampleEntityCollection { get; set; }
 }
-
-app.UseHttpsRedirection();
-
-// Map CRUD endpoints
-app.MapGroup("api")
-        .MapEntityEndpoints<SampleEntity,int>();
-        .MapEntityEndpoints<SampleEmbeddedEntity,int>();
-
-app.Run();
-```
-
-#### Option 2: Automatic entity discovery using reflection
-
-```csharp
-var builder = youbApplication.CreateBuilder(args);
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-var assembly = Assembly.GetExecutingAssembly();
-
-// Add required db services
-builder.Services.AddAllEntityServices(assembly, options => options.UseInMemoryDatabase("sample"));
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-// Map CRUD endpoints
-app.MapGroup("api")
-        .MapAllEntityEndpoints<int>(assembly);
-
-app.Run();
 ```
 
 ### Database Initialization
@@ -198,10 +163,6 @@ builder.Services.AddAllEntityServices(assembly,
 
 This ensures that a fresh database is used in every run. If you only need
 to set the database once, `DatabaseAction.EnsureCreated` is the recommended option
-
-> [!NOTE]  
-> There are currently no official ways of using migrations with this project.
->
 
 ### Advanced Route Options
 

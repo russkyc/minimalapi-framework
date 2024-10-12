@@ -17,7 +17,7 @@
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.7.0</Version>
+        <Version>0.8.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
@@ -34,6 +34,10 @@
 
     <ItemGroup>
         <Resource Include="PackageIcon.png" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
     </ItemGroup>
 
 </Project>

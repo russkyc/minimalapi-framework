@@ -6,7 +6,8 @@
         <Nullable>enable</Nullable>
         <OutputType>library</OutputType>
         <UserSecretsId>07fb0dbb-8872-4f52-a7b7-67262f8f411e</UserSecretsId>
-        <PackageReleaseNotes>Add database creation options (EnsureCreated, DeleteAndCreate). Learn more in the updated docs</PackageReleaseNotes>
+        <PackageReleaseNotes>- Refactor DbContext usage (migrate from per-entity context)
+- Add migrations support (using a custom BaseDbContext implementation)</PackageReleaseNotes>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -19,7 +20,7 @@
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.7.0</Version>
+        <Version>0.8.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
