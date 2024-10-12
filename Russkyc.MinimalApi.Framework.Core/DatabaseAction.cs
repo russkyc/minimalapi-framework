@@ -4,5 +4,6 @@ public enum DatabaseAction
 {
     None,
     EnsureCreated,
-    DeleteAndCreate
+    DeleteAndCreate,
+    ApplyPendingMigrations
 }

@@ -19,7 +19,7 @@ public static class MinimalApiExtensions
         var getCollectionEndpoint = entityEndpointGroup
             .MapGet("/",
                 async (
-                    [FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                    [FromServices] BaseDbContext context,
                     [FromQuery] string? include,
                     [FromQuery] string? filter,
                     [FromQuery] string? property,
@@ -29,9 +29,9 @@ public static class MinimalApiExtensions
                 {
                     try
                     {
-                        await using var context = await contextFactory.CreateDbContextAsync();
+                        var dbSet = context.DbSet<TEntity>();
 
-                        var entities = context.Entities
+                        var entities = dbSet
                             .AsNoTracking()
                             .ApplyIncludes(include);
                         if (!string.IsNullOrWhiteSpace(filter))
@@ -88,15 +88,15 @@ public static class MinimalApiExtensions
 
         var getSingleEntityEndpoint = entityEndpointGroup
             .MapGet("/{id}",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory, [FromRoute] TKeyType id,
+                async ([FromServices] BaseDbContext context, [FromRoute] TKeyType id,
                     [FromQuery] string? include,
                     [FromQuery] string? property) =>
                 {
                     try
                     {
-                        await using var context = await contextFactory.CreateDbContextAsync();
+                        var dbSet = context.DbSet<TEntity>();
 
-                        var query = context.Entities
+                        var query = dbSet
                             .AsNoTracking()
                             .ApplyIncludes(include)
                             .SelectProperties(property);
@@ -120,21 +120,20 @@ public static class MinimalApiExtensions
 
         var addEntityEndpoint = entityEndpointGroup
             .MapPost("/",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                async ([FromServices] BaseDbContext context,
                     [FromBody] TEntity entity) =>
                 {
                     try
                     {
-                        await using var context = await contextFactory.CreateDbContextAsync();
+                        var dbSet = context.DbSet<TEntity>();
 
-                        var existingEntity = await context.Entities.FindAsync(((IDbEntity<TKeyType>)entity).Id);
+                        var existingEntity = await dbSet.FindAsync(((IDbEntity<TKeyType>)entity).Id);
                         if (existingEntity != null)
                         {
                             return Results.Conflict("An entity with the same key already exists.");
                         }
 
-                        var entryEntity = await context.Entities
-                            .AddAsync(entity);
+                        var entryEntity = await dbSet.AddAsync(entity);
                         await context.SaveChangesAsync();
                         return Results.Ok(entryEntity.Entity);
                     }
@@ -149,15 +148,14 @@ public static class MinimalApiExtensions
 
         var updateEntityEndpoint = entityEndpointGroup
             .MapPatch("/",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                async ([FromServices] BaseDbContext context,
                     [FromBody] TEntity entity) =>
                 {
                     try
                     {
-                        await using var context = await contextFactory.CreateDbContextAsync();
+                        var dbSet = context.DbSet<TEntity>();
 
-                        var entryEntity = context.Entities
-                            .Update(entity);
+                        var entryEntity = dbSet.Update(entity);
                         await context.SaveChangesAsync();
                         return Results.Ok(entryEntity.Entity);
                     }
@@ -172,21 +170,20 @@ public static class MinimalApiExtensions
 
         var deleteEntityEndpoint = entityEndpointGroup
             .MapDelete("/{id}",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                async ([FromServices] BaseDbContext context,
                     [FromRoute] TKeyType id) =>
                 {
                     try
                     {
-                        await using var context = await contextFactory.CreateDbContextAsync();
+                        var dbSet = context.DbSet<TEntity>();
 
-                        var entity = await context.Entities
-                            .FindAsync(id);
+                        var entity = await dbSet.FindAsync(id);
                         if (entity is null)
                         {
                             return Results.NotFound();
                         }
 
-                        context.Entities.Remove(entity);
+                        dbSet.Remove(entity);
                         await context.SaveChangesAsync();
                         return Results.Ok(entity);
                     }
@@ -200,24 +197,23 @@ public static class MinimalApiExtensions
             .WithOpenApi();
 
         var addEntitiesEndpoint = entityEndpointGroup
-            .MapPost("/batch", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+            .MapPost("/batch", async ([FromServices] BaseDbContext context,
                 [FromBody] TEntity[] entities) =>
             {
                 try
                 {
-                    await using var context = await contextFactory.CreateDbContextAsync();
+                    var dbSet = context.DbSet<TEntity>();
 
                     var entityEntries = new List<TEntity>();
                     foreach (var entity in entities)
                     {
-                        var existingEntity = await context.Entities.FindAsync(((IDbEntity<TKeyType>)entity).Id);
+                        var existingEntity = await dbSet.FindAsync(((IDbEntity<TKeyType>)entity).Id);
                         if (existingEntity != null)
                         {
                             return Results.Conflict("An entity with the same key already exists.");
                         }
 
-                        var entryEntity = await context.Entities
-                            .AddAsync(entity);
+                        var entryEntity = await dbSet.AddAsync(entity);
                         entityEntries.Add(entryEntity.Entity);
                     }
 
@@ -234,15 +230,14 @@ public static class MinimalApiExtensions
             .WithOpenApi();
 
         var updateEntitiesEndpoint = entityEndpointGroup
-            .MapPut("/batch", async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+            .MapPut("/batch", async ([FromServices] BaseDbContext context,
                 [FromBody] TEntity[] entities) =>
             {
                 try
                 {
-                    await using var context = await contextFactory.CreateDbContextAsync();
+                    var dbSet = context.DbSet<TEntity>();
 
-                    context.Entities
-                        .UpdateRange(entities);
+                    dbSet.UpdateRange(entities);
                     var result = await context.SaveChangesAsync();
                     return Results.Ok($"Updated {result} items");
                 }
@@ -257,14 +252,14 @@ public static class MinimalApiExtensions
 
         var updateEntitiesWithFiltersEndpoint = entityEndpointGroup
             .MapPatch("/batch",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                async ([FromServices] BaseDbContext context,
                     [FromQuery] string? filter, [FromBody] Dictionary<string, object> updateFields) =>
                 {
                     try
                     {
-                        await using var context = await contextFactory.CreateDbContextAsync();
+                        var dbSet = context.DbSet<TEntity>();
 
-                        var entities = context.Entities.AsQueryable();
+                        var entities = dbSet.AsQueryable();
 
                         if (!string.IsNullOrWhiteSpace(filter))
                         {
@@ -304,7 +299,7 @@ public static class MinimalApiExtensions
                             }
                         }
 
-                        context.Entities.UpdateRange(entityList);
+                        dbSet.UpdateRange(entityList);
                         var result = await context.SaveChangesAsync();
                         return Results.Ok($"Updated {result} items");
                     }
@@ -319,15 +314,15 @@ public static class MinimalApiExtensions
 
         var deleteEntitiesEndpoint = entityEndpointGroup
             .MapDelete("/batch",
-                async ([FromServices] IDbContextFactory<EntityContext<TEntity>> contextFactory,
+                async ([FromServices] BaseDbContext context,
                     [FromQuery] string? include,
                     [FromQuery] string? filter) =>
                 {
                     try
                     {
-                        await using var context = await contextFactory.CreateDbContextAsync();
+                        var dbSet = context.DbSet<TEntity>();
 
-                        var entities = context.Entities
+                        var entities = dbSet
                             .AsNoTracking()
                             .ApplyIncludes(include);
 
@@ -343,7 +338,7 @@ public static class MinimalApiExtensions
                             }
                         }
 
-                        context.Entities.RemoveRange(entities);
+                        dbSet.RemoveRange(entities);
                         var result = await context.SaveChangesAsync();
                         return Results.Ok($"Deleted {result} items");
                     }
