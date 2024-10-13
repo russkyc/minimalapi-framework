@@ -30,6 +30,8 @@ public static class MinimalApiExtensions
                     [FromQuery] string? include,
                     [FromQuery] string? filter,
                     [FromQuery] string? property,
+                    [FromQuery] string? orderBy,
+                    [FromQuery] bool orderByDescending = false,
                     [FromQuery] int page = 1,
                     [FromQuery] int pageSize = 10,
                     [FromQuery] bool paginate = false) =>
@@ -38,19 +40,21 @@ public static class MinimalApiExtensions
                     {
                         var dbSet = context.DbSet<TEntity>();
 
-                        var entities = dbSet
-                            .AsNoTracking()
-                            .ApplyIncludes(include);
-                        if (!string.IsNullOrWhiteSpace(filter))
+                        var entities = dbSet.AsNoTracking();
+
+                        if (!string.IsNullOrEmpty(include))
                         {
-                            try
-                            {
-                                entities = entities.ApplyFilter(filter);
-                            }
-                            catch (Exception e)
-                            {
-                                return Results.BadRequest(e.Message);
-                            }
+                            entities = entities.ApplyIncludes(include);
+                        }
+
+                        if (!string.IsNullOrEmpty(filter))
+                        {
+                            entities = entities.ApplyFilter(filter);
+                        }
+
+                        if (!string.IsNullOrEmpty(orderBy))
+                        {
+                            entities = entities.ApplyOrdering(orderBy, orderByDescending);
                         }
 
                         if (property is not null)
