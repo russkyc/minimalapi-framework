@@ -17,7 +17,7 @@
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.8.0</Version>
+        <Version>0.9.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>

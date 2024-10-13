@@ -15,7 +15,9 @@ to create a quick backend for prototyping apps that use CRUD operations.
 <img src="Resources/swagger.jpeg" style="width: 100%;" />
 
 > ### ✨ What's New:
-> Migrations support (using custom DbContext implementation) [learn more...](#advanced-setup)
+> - Realtime support using SignalR [learn more...](#realtime-support)
+> - Advanced querying with filtering, ordering, and pagination [learn more...](#advanced-querying)
+> - Batch endpoints for adding, updating, and deleting multiple entities [learn more...](#batch-endpoints)
 
 ## Potential use-cases
 
@@ -46,21 +48,6 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 2. **Add the required services and API endpoint mappings** in the `Program.cs` file:
 
     ```csharp
-    // Used by reflection to know where to find entity classes
-    var assembly = Assembly.GetExecutingAssembly();
-
-    // 1. Entity Context Services
-    // `options.UseInMemoryDatabase()` can be replaced with other EF Core Data Providers
-    builder.Services.AddDbContextService(assembly, options => options.UseInMemoryDatabase("sample"));
-    
-    // 2. Map Entity CRUD Endpoints
-    // `MapGroup()` is not required, used to add the "/api" prefix.
-    // Can simply be `app.MapAllEntityEndpoints<int>(assembly);`
-    app.MapGroup("api")
-        .MapAllEntityEndpoints<int>(assembly);
-    ```
-    This is how the full `Program.cs` might look like
-    ```csharp
     using System.Reflection;
     using Microsoft.EntityFrameworkCore;
     using Russkyc.MinimalApi.Framework;
@@ -75,6 +62,11 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
     // Add Entity Context Services
     builder.Services.AddDbContextService(assembly, options => options.UseInMemoryDatabase("sample"));
 
+    // Uncomment to enable realtime events
+    // by default the endpoint used is "/crud-events"
+    // this can be changed by providing a string parameter, eg; `MapRealtimeHub("/api-events")`
+    builder.Services.AddRealtimeService();
+
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
@@ -88,6 +80,9 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
     // Map Entity CRUD Endpoints
     app.MapGroup("api")
         .MapAllEntityEndpoints<int>(assembly);
+
+    // Map Realtime Hub
+    app.MapRealtimeHub();
 
     app.Run();
     ```
@@ -181,8 +176,8 @@ advanced querying.
 
 #### Entity Framework Core Navigation Properties
 
-If you do a get requrest to the endpoint `/api/sampleentity` you will
-recieve a response that looks like this:
+If you do a get request to the endpoint `/api/sampleentity` you will
+receive a response that looks like this:
 
 ```json
 [
@@ -258,7 +253,7 @@ Then you will have this result:
 
 #### Filter query support (with the help of DynamicExpressionParser in System.Linq.Dynamic.Core)
 
-entities can now be filtered with the `filter` queryParam and supports standard expressions. Parameters should be
+Entities can now be filtered with the `filter` queryParam and supports standard expressions. Parameters should be
 prefixed with `@` in order to be valid, eg; a parameter named `Content` should be used as `@Content`. Here are a few
 examples:
 
@@ -278,13 +273,22 @@ GET /api/sampleentity?filter=@Count == 1 || @Count > 8
 GET /api/sampleentity?filter=@ContactPerson != null
 ```
 
-These are visualized for readability, in actual use, the filter value should be Url Encoded.
+These are visualized for readability, in actual use, the filter value should be URL Encoded.
 
-### Pagination
+#### Ordering Support
 
-By default pagination is disabled and the query collection response returns something like this
+Entities can now be ordered using the `orderBy` and `orderByDescending` query parameters. Multiple properties can be specified for ordering, separated by commas. The first property will be ordered using `OrderBy` or `OrderByDescending`, and subsequent properties will be ordered using `ThenBy` or `ThenByDescending`.
 
-```jaon
+```http
+GET /api/sampleentity?orderBy=property,embeddedEntity.property2&orderByDescending=true
+```
+the `orderBy` query param will define what properties are taken into consideration in ordering.
+the `orderByDescending` query param is a bool property that changes the behavior to descending when set to true.
+#### Pagination
+
+By default, pagination is disabled and the query collection response returns something like this
+
+```json
 [
   {
     "id": 1,
@@ -312,7 +316,7 @@ and set the `page`, `pageSize` query params as needed. as an example:
 GET /api/sampleentity?paginate=true&page=1&pageSize=1
 ```
 
-This will now return a `PaginatedCollection` object with this json schema:
+This will now return a `PaginatedCollection` object with this JSON schema:
 
 ```json
 {
@@ -390,6 +394,72 @@ Content-Type: application/json
 ```http
 DELETE /api/sampleentity/batch?filter=@Count > 8
 ```
+
+### Realtime Support
+
+To enable realtime events support, add the `AddRealtimeService` method to your service collection and map the realtime hub using `MapRealtimeHub` in your `Program.cs` file:
+
+```csharp
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var assembly = Assembly.GetExecutingAssembly();
+
+// Add Entity Context Services
+builder.Services.AddDbContextService(assembly, options => options.UseInMemoryDatabase("sample"));
+
+// Add Realtime Service
+builder.Services.AddRealtimeService();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+// Map Entity CRUD Endpoints
+app.MapGroup("api")
+    .MapAllEntityEndpoints<int>(assembly);
+
+// Map Realtime Hub
+app.MapRealtimeHub();
+
+app.Run();
+```
+The default websocket endpoint is `/crud-events` but can be changed by
+adding a string parameter of the desired endpint in the `MapRealtimeHub`
+method, eg; `.MapRealtimeHub("/api-events")`.
+
+Each event returned is an `EntityEvent<T>` type, where T is the type of data
+returned by the resource event that triggered the websocket message. Eg; when
+creating a `SampleEntity` using `post` the `EntityEvent` being sent in realtime is of
+type `EntityEvent<SampleEntity>`.
+
+#### EntityEvent<T> Class
+
+```csharp
+public class EntityEvent<T>
+{
+    public string Resource { get; set; }
+    public string Type { get; set; }
+    public T? Data { get; set; }
+}
+```
+**Schema Information**
+
+- The `Resource` property will be the name of the entity in lowercase, eg; "sampleentity".
+- The `Type` property will be the type of event, eg; `created`, `updated`, `deleted`, `batch-created`, `batch-updated`, `batch-deleted`
+- The `Data` property contains the data being returned by that resource method.
 
 ## Important things to consider
 

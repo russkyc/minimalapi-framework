@@ -6,6 +6,11 @@ namespace Russkyc.MinimalApi.Framework;
 
 public static class ServiceCollectionExtensions
 {
+    public static void AddRealtimeService(this IServiceCollection serviceCollection)
+    {
+        serviceCollection.AddSignalR();
+    }
+    
     public static void AddDbContextService(this IServiceCollection serviceCollection,
         Assembly assembly,
         Action<DbContextOptionsBuilder>? optionsAction = null,

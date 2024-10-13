@@ -1,13 +1,20 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
 using Russkyc.MinimalApi.Framework.Core;
 
 namespace Russkyc.MinimalApi.Framework;
 
 public static class MinimalApiExtensions
 {
+    public static void MapRealtimeHub(this IEndpointRouteBuilder endpointBuilder, string endpoint = "/crud-events")
+    {
+        endpointBuilder.MapHub<EventHub>(endpoint);
+    }
+
     public static void MapEntityEndpoints<TEntity, TKeyType>(this IEndpointRouteBuilder endpointBuilder,
         string? groupName = null,
         Action<IEndpointConventionBuilder>? routeOptionsAction = null)
@@ -23,6 +30,8 @@ public static class MinimalApiExtensions
                     [FromQuery] string? include,
                     [FromQuery] string? filter,
                     [FromQuery] string? property,
+                    [FromQuery] string? orderBy,
+                    [FromQuery] bool orderByDescending = false,
                     [FromQuery] int page = 1,
                     [FromQuery] int pageSize = 10,
                     [FromQuery] bool paginate = false) =>
@@ -31,19 +40,21 @@ public static class MinimalApiExtensions
                     {
                         var dbSet = context.DbSet<TEntity>();
 
-                        var entities = dbSet
-                            .AsNoTracking()
-                            .ApplyIncludes(include);
-                        if (!string.IsNullOrWhiteSpace(filter))
+                        var entities = dbSet.AsNoTracking();
+
+                        if (!string.IsNullOrEmpty(include))
                         {
-                            try
-                            {
-                                entities = entities.ApplyFilter(filter);
-                            }
-                            catch (Exception e)
-                            {
-                                return Results.BadRequest(e.Message);
-                            }
+                            entities = entities.ApplyIncludes(include);
+                        }
+
+                        if (!string.IsNullOrEmpty(filter))
+                        {
+                            entities = entities.ApplyFilter(filter);
+                        }
+
+                        if (!string.IsNullOrEmpty(orderBy))
+                        {
+                            entities = entities.ApplyOrdering(orderBy, orderByDescending);
                         }
 
                         if (property is not null)
@@ -120,7 +131,9 @@ public static class MinimalApiExtensions
 
         var addEntityEndpoint = entityEndpointGroup
             .MapPost("/",
-                async ([FromServices] BaseDbContext context,
+                async (
+                    [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices] BaseDbContext context,
                     [FromBody] TEntity entity) =>
                 {
                     try
@@ -135,6 +148,17 @@ public static class MinimalApiExtensions
 
                         var entryEntity = await dbSet.AddAsync(entity);
                         await context.SaveChangesAsync();
+
+                        if (eventHub is not null)
+                        {
+                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "create",
+                                Data = entryEntity.Entity,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
+
                         return Results.Ok(entryEntity.Entity);
                     }
                     catch (Exception e)
@@ -148,7 +172,9 @@ public static class MinimalApiExtensions
 
         var updateEntityEndpoint = entityEndpointGroup
             .MapPatch("/",
-                async ([FromServices] BaseDbContext context,
+                async (
+                    [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices] BaseDbContext context,
                     [FromBody] TEntity entity) =>
                 {
                     try
@@ -157,6 +183,17 @@ public static class MinimalApiExtensions
 
                         var entryEntity = dbSet.Update(entity);
                         await context.SaveChangesAsync();
+
+                        if (eventHub is not null)
+                        {
+                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "update",
+                                Data = entryEntity.Entity,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
+
                         return Results.Ok(entryEntity.Entity);
                     }
                     catch (Exception e)
@@ -170,7 +207,9 @@ public static class MinimalApiExtensions
 
         var deleteEntityEndpoint = entityEndpointGroup
             .MapDelete("/{id}",
-                async ([FromServices] BaseDbContext context,
+                async (
+                    [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices] BaseDbContext context,
                     [FromRoute] TKeyType id) =>
                 {
                     try
@@ -185,6 +224,17 @@ public static class MinimalApiExtensions
 
                         dbSet.Remove(entity);
                         await context.SaveChangesAsync();
+
+                        if (eventHub is not null)
+                        {
+                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "delete",
+                                Data = entity,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
+
                         return Results.Ok(entity);
                     }
                     catch (Exception e)
@@ -197,7 +247,9 @@ public static class MinimalApiExtensions
             .WithOpenApi();
 
         var addEntitiesEndpoint = entityEndpointGroup
-            .MapPost("/batch", async ([FromServices] BaseDbContext context,
+            .MapPost("/batch", async (
+                [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                [FromServices] BaseDbContext context,
                 [FromBody] TEntity[] entities) =>
             {
                 try
@@ -218,6 +270,17 @@ public static class MinimalApiExtensions
                     }
 
                     await context.SaveChangesAsync();
+
+                    if (eventHub is not null)
+                    {
+                        await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                        {
+                            Type = "batch-create",
+                            Data = entityEntries,
+                            Resource = mapGroupName.ToLower()
+                        });
+                    }
+
                     return Results.Ok(entityEntries);
                 }
                 catch (Exception e)
@@ -230,7 +293,9 @@ public static class MinimalApiExtensions
             .WithOpenApi();
 
         var updateEntitiesEndpoint = entityEndpointGroup
-            .MapPut("/batch", async ([FromServices] BaseDbContext context,
+            .MapPut("/batch", async (
+                [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                [FromServices] BaseDbContext context,
                 [FromBody] TEntity[] entities) =>
             {
                 try
@@ -239,6 +304,17 @@ public static class MinimalApiExtensions
 
                     dbSet.UpdateRange(entities);
                     var result = await context.SaveChangesAsync();
+
+                    if (eventHub is not null)
+                    {
+                        await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                        {
+                            Type = "update",
+                            Data = entities,
+                            Resource = mapGroupName.ToLower()
+                        });
+                    }
+
                     return Results.Ok($"Updated {result} items");
                 }
                 catch (Exception e)
@@ -252,7 +328,9 @@ public static class MinimalApiExtensions
 
         var updateEntitiesWithFiltersEndpoint = entityEndpointGroup
             .MapPatch("/batch",
-                async ([FromServices] BaseDbContext context,
+                async (
+                    [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices] BaseDbContext context,
                     [FromQuery] string? filter, [FromBody] Dictionary<string, object> updateFields) =>
                 {
                     try
@@ -301,6 +379,17 @@ public static class MinimalApiExtensions
 
                         dbSet.UpdateRange(entityList);
                         var result = await context.SaveChangesAsync();
+
+                        if (eventHub is not null)
+                        {
+                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "batch-update",
+                                Data = entityList,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
+
                         return Results.Ok($"Updated {result} items");
                     }
                     catch (Exception e)
@@ -314,7 +403,9 @@ public static class MinimalApiExtensions
 
         var deleteEntitiesEndpoint = entityEndpointGroup
             .MapDelete("/batch",
-                async ([FromServices] BaseDbContext context,
+                async (
+                    [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices] BaseDbContext context,
                     [FromQuery] string? include,
                     [FromQuery] string? filter) =>
                 {
@@ -340,6 +431,17 @@ public static class MinimalApiExtensions
 
                         dbSet.RemoveRange(entities);
                         var result = await context.SaveChangesAsync();
+
+                        if (eventHub is not null)
+                        {
+                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "batch-delete",
+                                Data = entities,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
+
                         return Results.Ok($"Deleted {result} items");
                     }
                     catch (Exception e)

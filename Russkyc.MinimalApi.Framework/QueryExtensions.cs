@@ -75,4 +75,58 @@ internal static class QueryExtensions
 
         return query.Select(selector);
     }
+
+    internal static IQueryable<T> ApplyOrdering<T>(this IQueryable<T> query, string? orderBy, bool descending)
+        where T : class
+    {
+        if (string.IsNullOrEmpty(orderBy))
+        {
+            return query;
+        }
+
+        var entityType = typeof(T);
+        var properties = orderBy.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim())
+            .ToList();
+
+        if (properties.Count == 0)
+        {
+            return query;
+        }
+
+        var parameter = Expression.Parameter(entityType, "e");
+        var firstProperty = entityType.GetProperty(properties[0],
+            BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+        if (firstProperty == null)
+        {
+            throw new ArgumentException($"Property '{properties[0]}' not found on type '{entityType.Name}'");
+        }
+
+        var firstPropertyAccess = Expression.MakeMemberAccess(parameter, firstProperty);
+        var firstOrderByExpression = Expression.Lambda(firstPropertyAccess, parameter);
+
+        var methodName = descending ? "OrderByDescending" : "OrderBy";
+        var resultExpression = Expression.Call(typeof(Queryable), methodName,
+            [entityType, firstProperty.PropertyType],
+            query.Expression, Expression.Quote(firstOrderByExpression));
+
+        for (int i = 1; i < properties.Count; i++)
+        {
+            var property = entityType.GetProperty(properties[i],
+                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            if (property == null)
+            {
+                throw new ArgumentException($"Property '{properties[i]}' not found on type '{entityType.Name}'");
+            }
+
+            var propertyAccess = Expression.MakeMemberAccess(parameter, property);
+            var orderByExpression = Expression.Lambda(propertyAccess, parameter);
+
+            methodName = descending ? "ThenByDescending" : "ThenBy";
+            resultExpression = Expression.Call(typeof(Queryable), methodName, [entityType, property.PropertyType],
+                resultExpression, Expression.Quote(orderByExpression));
+        }
+
+        return query.Provider.CreateQuery<T>(resultExpression);
+    }
 }
