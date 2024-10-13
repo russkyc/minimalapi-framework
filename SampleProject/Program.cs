@@ -15,6 +15,9 @@ builder.Services.AddSwaggerGen();
 // NOTE: Use the assembly where the entity classes are contained.
 var assembly = Assembly.GetExecutingAssembly();
 
+// Uncomment to add required service for realtime events
+builder.Services.AddRealtimeService();
+
 // The entity endpoints uses a BaseDbContext to access the database,
 // We can register this automatically by using this extension method
 // NOTE: We are using sqlite for this example, but you can use all other EF Core providers
@@ -32,6 +35,7 @@ builder.Services.AddDbContextService(assembly,
 // builder.Services.AddDbContextService<CustomDbContext>(
 //     options => options.UseSqlite("Data Source=test.sqlite"),
 //     databaseAction: DatabaseAction.EnsureCreated);
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -47,6 +51,11 @@ app.UseHttpsRedirection();
 // have the `/api` prefix
 app.MapGroup("api")
     .MapAllEntityEndpoints<Guid>(assembly);
+
+// Uncomment to enable realtime events
+// by default the endpoint used is "/crud-events"
+// this can be changed by providing a string parameter, eg; `MapRealtimeHub("/api-events")`
+app.MapRealtimeHub();
 
 // You can modify the endpoint options,
 // in this case, use this instead if you want the mapped entity routes
