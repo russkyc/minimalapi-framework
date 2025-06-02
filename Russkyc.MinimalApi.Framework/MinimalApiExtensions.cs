@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
+using MiniValidation;
 using Russkyc.MinimalApi.Framework.Core;
 
 namespace Russkyc.MinimalApi.Framework;
@@ -139,6 +140,18 @@ public static class MinimalApiExtensions
                     try
                     {
                         var dbSet = context.DbSet<TEntity>();
+                        
+                        var isValid = MiniValidator.TryValidate(entity, out var errors);
+                        
+                        if (!isValid)
+                        {
+                            var validationError = new ValidationError
+                            {
+                                Message = $"Validation for {entity.GetType().Name} failed.",
+                                Errors = errors
+                            };
+                            return Results.BadRequest(validationError);
+                        }
 
                         var existingEntity = await dbSet.FindAsync(((IDbEntity<TKeyType>)entity).Id);
                         if (existingEntity != null)
@@ -254,6 +267,21 @@ public static class MinimalApiExtensions
             {
                 try
                 {
+                    foreach (var entity in entities)
+                    {
+                        var isValid = MiniValidator.TryValidate(entity, out var errors);
+                        
+                        if (!isValid)
+                        {
+                            var validationError = new ValidationError
+                            {
+                                Message = $"Validation for {entity.GetType().Name} failed.",
+                                Errors = errors
+                            };
+                            return Results.BadRequest(validationError);
+                        }
+
+                    }
                     var dbSet = context.DbSet<TEntity>();
 
                     var entityEntries = new List<TEntity>();
