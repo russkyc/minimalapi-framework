@@ -43,7 +43,11 @@ if (app.Environment.IsDevelopment())
     {
         options.RouteTemplate = "/openapi/{documentName}.json";
     });
-    app.MapScalarApiReference();
+    app.MapScalarApiReference(options =>
+    {
+        options.WithSidebar(false);
+        options.WithLayout(ScalarLayout.Classic);
+    });
 }
 
 app.UseHttpsRedirection();

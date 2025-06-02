@@ -12,7 +12,7 @@ Dynamically generates a generic CRUD API implementation
 backed with Entity Framework Core and Minimal API. This can be used
 to create a quick backend for prototyping apps that use CRUD operations.
 
-<img src="Resources/swagger.jpeg" style="width: 100%;" />
+<img src="Resources/scalar.jpeg" style="width: 100%;" />
 
 > ### ✨ What's New:
 > v0.10.0
