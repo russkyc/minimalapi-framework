@@ -27,6 +27,10 @@ Read more in the updated documentation</PackageReleaseNotes>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <NoWarn>AD0001</NoWarn>
+    </PropertyGroup>
+    
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
       <DebugSymbols>true</DebugSymbols>
       <DebugType>portable</DebugType>
@@ -42,11 +46,11 @@ Read more in the updated documentation</PackageReleaseNotes>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.10"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10"/>
-        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.4.5" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.16" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.16" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.16" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.16" />
+        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.5" />
     </ItemGroup>
 
     <ItemGroup>
