@@ -1,4 +1,3 @@
-using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Russkyc.MinimalApi.Framework;
 using Scalar.AspNetCore;
@@ -13,9 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// NOTE: Use the assembly where the entity classes are contained.
-var assembly = Assembly.GetExecutingAssembly();
-
 // Uncomment to add required service for realtime events
 builder.Services.AddRealtimeService();
 
@@ -24,8 +20,10 @@ builder.Services.AddRealtimeService();
 // NOTE: We are using sqlite for this example, but you can use all other EF Core providers
 // For database creation, the `databaseAction` sets how it will be created.
 // By default, it is set to `DatabaseAction.EnsureCreated`
-builder.Services.AddDbContextService(assembly,
-    options => options.UseSqlite("Data Source=test.sqlite"));
+builder.Services.AddDbContextService(optionsAction: options => options.UseSqlite("Data Source=test.sqlite"));
+
+// If the Entity classes are not in the same assembly, you can specify the assembly where they are located.
+// builder.Services.AddDbContextService(assembly: <assembly>, optionsAction: options => options.UseSqlite("Data Source=test.sqlite"));
 
 // To use migrations, we can also define and register our own DbContext using a generic overload
 // `AddDbContextService<T>()`. The custom DbContext need to inherit from `BaseDbContext` and
@@ -54,7 +52,11 @@ app.UseHttpsRedirection();
 // MapGroup is not required, we do this to make all the entity routes
 // have the `/api` prefix
 app.MapGroup("api")
-    .MapAllEntityEndpoints<Guid>(assembly);
+    .MapAllEntityEndpoints<Guid>();
+
+// You can also set the assembly where the entities are located if they are not in the same assembly
+// app.MapGroup("api")
+//     .MapAllEntityEndpoints<Guid>(assembly: <assembly>);
 
 // Uncomment to enable realtime events
 // by default the endpoint used is "/crud-events"

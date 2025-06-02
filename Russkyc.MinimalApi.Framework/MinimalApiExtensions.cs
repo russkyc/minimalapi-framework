@@ -465,9 +465,11 @@ public static class MinimalApiExtensions
         routeOptionsAction?.Invoke(deleteEntitiesEndpoint);
     }
 
-    public static void MapAllEntityEndpoints<TId>(this IEndpointRouteBuilder endpointBuilder, Assembly assembly,
+    public static void MapAllEntityEndpoints<TId>(this IEndpointRouteBuilder endpointBuilder, Assembly? assembly = null,
         Action<IEndpointConventionBuilder>? routeOptionsAction = null)
     {
+        assembly ??= Assembly.GetEntryAssembly()!;
+        
         var entityTypes = assembly
             .GetTypes()
             .Where(t => t.GetInterfaces()

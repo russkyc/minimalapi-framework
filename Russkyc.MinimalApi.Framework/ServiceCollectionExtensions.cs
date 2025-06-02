@@ -12,12 +12,14 @@ public static class ServiceCollectionExtensions
     }
     
     public static void AddDbContextService(this IServiceCollection serviceCollection,
-        Assembly assembly,
+        Assembly? assembly = null,
         Action<DbContextOptionsBuilder>? optionsAction = null,
         ServiceLifetime contextLifetime = ServiceLifetime.Scoped,
         ServiceLifetime optionsLifetime = ServiceLifetime.Scoped,
         DatabaseAction databaseAction = DatabaseAction.EnsureCreated)
     {
+        assembly ??= Assembly.GetEntryAssembly()!;
+        
         var entityTypes = assembly
             .GetTypes()
             .Where(t => t.GetInterfaces()
