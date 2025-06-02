@@ -15,6 +15,10 @@ to create a quick backend for prototyping apps that use CRUD operations.
 <img src="Resources/swagger.jpeg" style="width: 100%;" />
 
 > ### ✨ What's New:
+> v0.10.0
+> - Support for data annotations validation [learn more...](#data-annotations-validation)
+> 
+> v0.9.0
 > - Realtime support using SignalR [learn more...](#realtime-support)
 > - Advanced querying with filtering, ordering, and pagination [learn more...](#advanced-querying)
 > - Batch endpoints for adding, updating, and deleting multiple entities [learn more...](#batch-endpoints)
@@ -394,6 +398,35 @@ Content-Type: application/json
 ```http
 DELETE /api/sampleentity/batch?filter=@Count > 8
 ```
+
+### Data Annotations Validation
+Properties with data annotations such as `[Required]`, `[StringLength]`, and others will now be validated automatically
+when creating entities. If validation fails, a `400 Bad Request` response will be returned with the validation errors.
+
+**Example Class**
+```csharp
+using System.ComponentModel.DataAnnotations;
+using Russkyc.MinimalApi.Framework.Core;
+
+public class SampleEntity : DbEntity<Guid>
+{
+    [Required, MinLength(5)]
+    public string Property { get; set; }
+}
+```
+When Validation fails, a `400 Bad Request` response will be returned with this class as the response body:
+
+**Validation Error Class**
+```csharp
+public class ValidationError
+{
+    public string Message { get; set; }
+    public IDictionary<string,string[]> Errors { get; set; }
+}
+```
+
+> [!NOTE]
+> Data validation is implemented using [MiniValidation](https://github.com/DamianEdwards/MiniValidation). Fluent validation interfaces are not supported.
 
 ### Realtime Support
 
