@@ -6,7 +6,7 @@ namespace Russkyc.MinimalApi.Framework.Core;
 
 public abstract class DbEntity<TKeyType> : IDbEntity<TKeyType>
 {
-    [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public TKeyType Id { get; set; }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
