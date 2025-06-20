@@ -22,18 +22,16 @@ public static class MinimalApiExtensions
     }
 
     public static void MapEntityEndpoints<TEntity, TKeyType>(this IEndpointRouteBuilder endpointBuilder,
-        string? groupName = null,
         Action<IEndpointConventionBuilder>? routeOptionsAction = null)
         where TEntity : class
     {
-        var mapGroupName = groupName ?? typeof(TEntity).Name;
+        var mapGroupName = typeof(TEntity).Name;
         var entityEndpointGroup = endpointBuilder.MapGroup($"{mapGroupName.ToLower()}");
 
         var getCollectionEndpoint = entityEndpointGroup
             .MapGet("/", GetCollectionHandler<TEntity>())
             .Produces<PaginatedCollection<TEntity>>()
             .Produces<IEnumerable<TEntity>>()
-            .WithName($"AllowGet a {mapGroupName} collection")
             .WithTags(mapGroupName);
         var getSingleEntityEndpoint = entityEndpointGroup
             .MapGet("/{id}", GetSingleEntityHandler<TEntity, TKeyType>())
