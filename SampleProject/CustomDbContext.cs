@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Russkyc.MinimalApi.Framework;
+using Russkyc.MinimalApi.Framework.Data;
 
 namespace SampleProject;
 

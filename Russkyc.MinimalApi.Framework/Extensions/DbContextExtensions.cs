@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework.Data;
 
-namespace Russkyc.MinimalApi.Framework;
+namespace Russkyc.MinimalApi.Framework.Extensions;
 
 public static class DbContextExtensions
 {

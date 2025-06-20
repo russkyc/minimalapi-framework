@@ -1,17 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using MiniValidation;
 using Russkyc.MinimalApi.Framework.Core;
+using Russkyc.MinimalApi.Framework.Core.Access;
+using Russkyc.MinimalApi.Framework.Core.Attributes;
+using Russkyc.MinimalApi.Framework.Data;
+using Russkyc.MinimalApi.Framework.Options;
+using Russkyc.MinimalApi.Framework.Realtime;
 
-namespace Russkyc.MinimalApi.Framework;
+namespace Russkyc.MinimalApi.Framework.Extensions;
 
 public static class MinimalApiExtensions
 {
-    public static void MapRealtimeHub(this IEndpointRouteBuilder endpointBuilder, string endpoint = "/crud-events")
+    public static void MapRealtimeHub(this IEndpointRouteBuilder endpointBuilder, string endpoint)
     {
         endpointBuilder.MapHub<EventHub>(endpoint);
     }
@@ -26,7 +31,7 @@ public static class MinimalApiExtensions
 
         var getCollectionEndpoint = entityEndpointGroup
             .MapGet("/",
-                async (
+                async (HttpContext httpContext,
                     [FromServices] BaseDbContext context,
                     [FromQuery] string? include,
                     [FromQuery] string? filter,
@@ -39,6 +44,18 @@ public static class MinimalApiExtensions
                 {
                     try
                     {
+                        var getAttribute = typeof(TEntity).GetAttributeValue<AllowGet>();
+
+                        if (getAttribute is not null)
+                        {
+                            var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                            if (!permissions.Any(permission =>
+                                    getAttribute.Permission.Any(permission.Equals)))
+                            {
+                                return Results.Unauthorized();
+                            }
+                        }
+
                         var dbSet = context.DbSet<TEntity>();
 
                         var entities = dbSet.AsNoTracking();
@@ -94,18 +111,32 @@ public static class MinimalApiExtensions
                         return Results.BadRequest(e.Message);
                     }
                 })
-            .WithName($"Get a {mapGroupName} collection")
+            .WithName($"AllowGet a {mapGroupName} collection")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var getSingleEntityEndpoint = entityEndpointGroup
             .MapGet("/{id}",
-                async ([FromServices] BaseDbContext context, [FromRoute] TKeyType id,
+                async (
+                    HttpContext httpContext,
+                    [FromServices] BaseDbContext context, [FromRoute] TKeyType id,
                     [FromQuery] string? include,
                     [FromQuery] string? property) =>
                 {
                     try
                     {
+                        var getAttribute = typeof(TEntity).GetAttributeValue<AllowGet>();
+
+                        if (getAttribute is not null)
+                        {
+                            var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                            if (!permissions.Any(permission =>
+                                    getAttribute.Permission.Any(permission.Equals)))
+                            {
+                                return Results.Unauthorized();
+                            }
+                        }
+
                         var dbSet = context.DbSet<TEntity>();
 
                         var query = dbSet
@@ -126,23 +157,37 @@ public static class MinimalApiExtensions
                         return Results.BadRequest(e.Message);
                     }
                 })
-            .WithDescription($"Get a single {mapGroupName}")
+            .WithDescription($"AllowGet a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var addEntityEndpoint = entityEndpointGroup
             .MapPost("/",
                 async (
+                    HttpContext httpContext,
                     [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices, Optional] RealtimeClientStore? realtimeClientStore,
                     [FromServices] BaseDbContext context,
                     [FromBody] TEntity entity) =>
                 {
                     try
                     {
+                        var postAttribute = typeof(TEntity).GetAttributeValue<AllowPost>();
+
+                        if (postAttribute is not null)
+                        {
+                            var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                            if (!permissions.Any(permission =>
+                                    postAttribute.Permission.Any(permission.Equals)))
+                            {
+                                return Results.Unauthorized();
+                            }
+                        }
+
                         var dbSet = context.DbSet<TEntity>();
-                        
+
                         var isValid = MiniValidator.TryValidate(entity, out var errors);
-                        
+
                         if (!isValid)
                         {
                             var validationError = new ValidationError
@@ -162,14 +207,27 @@ public static class MinimalApiExtensions
                         var entryEntity = await dbSet.AddAsync(entity);
                         await context.SaveChangesAsync();
 
-                        if (eventHub is not null)
+                        if (eventHub is not null && realtimeClientStore is not null)
                         {
-                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            if (postAttribute?.Permission != null)
                             {
-                                Type = "create",
-                                Data = entryEntity.Entity,
-                                Resource = mapGroupName.ToLower()
-                            });
+                                var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(postAttribute.Permission);
+                                await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "create",
+                                    Data = entryEntity.Entity,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
+                            else
+                            {
+                                await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "create",
+                                    Data = entryEntity.Entity,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
                         }
 
                         return Results.Ok(entryEntity.Entity);
@@ -186,25 +244,49 @@ public static class MinimalApiExtensions
         var updateEntityEndpoint = entityEndpointGroup
             .MapPatch("/",
                 async (
+                    HttpContext httpContext,
                     [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices, Optional] RealtimeClientStore? realtimeClientStore,
                     [FromServices] BaseDbContext context,
                     [FromBody] TEntity entity) =>
                 {
                     try
                     {
+                        var patchAttribute = typeof(TEntity).GetAttributeValue<AllowPatch>();
+                        if (patchAttribute is not null)
+                        {
+                            var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                            if (!permissions.Any(permission =>
+                                    patchAttribute.Permission.Any(permission.Equals)))
+                            {
+                                return Results.Unauthorized();
+                            }
+                        }
                         var dbSet = context.DbSet<TEntity>();
-
                         var entryEntity = dbSet.Update(entity);
                         await context.SaveChangesAsync();
 
-                        if (eventHub is not null)
+                        if (eventHub is not null && realtimeClientStore is not null)
                         {
-                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            if (patchAttribute?.Permission != null)
                             {
-                                Type = "update",
-                                Data = entryEntity.Entity,
-                                Resource = mapGroupName.ToLower()
-                            });
+                                var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(patchAttribute.Permission);
+                                await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "update",
+                                    Data = entryEntity.Entity,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
+                            else
+                            {
+                                await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "update",
+                                    Data = entryEntity.Entity,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
                         }
 
                         return Results.Ok(entryEntity.Entity);
@@ -221,12 +303,24 @@ public static class MinimalApiExtensions
         var deleteEntityEndpoint = entityEndpointGroup
             .MapDelete("/{id}",
                 async (
+                    HttpContext httpContext,
                     [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices, Optional] RealtimeClientStore? realtimeClientStore,
                     [FromServices] BaseDbContext context,
                     [FromRoute] TKeyType id) =>
                 {
                     try
                     {
+                        var deleteAttribute = typeof(TEntity).GetAttributeValue<AllowDelete>();
+                        if (deleteAttribute is not null)
+                        {
+                            var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                            if (!permissions.Any(permission =>
+                                    deleteAttribute.Permission.Any(permission.Equals)))
+                            {
+                                return Results.Unauthorized();
+                            }
+                        }
                         var dbSet = context.DbSet<TEntity>();
 
                         var entity = await dbSet.FindAsync(id);
@@ -238,14 +332,27 @@ public static class MinimalApiExtensions
                         dbSet.Remove(entity);
                         await context.SaveChangesAsync();
 
-                        if (eventHub is not null)
+                        if (eventHub is not null && realtimeClientStore is not null)
                         {
-                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            if (deleteAttribute?.Permission != null)
                             {
-                                Type = "delete",
-                                Data = entity,
-                                Resource = mapGroupName.ToLower()
-                            });
+                                var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(deleteAttribute.Permission);
+                                await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "delete",
+                                    Data = entity,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
+                            else
+                            {
+                                await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "delete",
+                                    Data = entity,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
                         }
 
                         return Results.Ok(entity);
@@ -255,22 +362,34 @@ public static class MinimalApiExtensions
                         return Results.BadRequest(e.Message);
                     }
                 })
-            .WithDescription($"Delete a single {mapGroupName}")
+            .WithDescription($"AllowDelete a single {mapGroupName}")
             .WithTags(mapGroupName)
             .WithOpenApi();
 
         var addEntitiesEndpoint = entityEndpointGroup
             .MapPost("/batch", async (
+                HttpContext httpContext,
                 [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                [FromServices, Optional] RealtimeClientStore? realtimeClientStore,
                 [FromServices] BaseDbContext context,
                 [FromBody] TEntity[] entities) =>
             {
                 try
                 {
+                    var postAttribute = typeof(TEntity).GetAttributeValue<AllowPost>();
+                    if (postAttribute is not null)
+                    {
+                        var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                        if (!permissions.Any(permission =>
+                                postAttribute.Permission.Any(permission.Equals)))
+                        {
+                            return Results.Unauthorized();
+                        }
+                    }
                     foreach (var entity in entities)
                     {
                         var isValid = MiniValidator.TryValidate(entity, out var errors);
-                        
+
                         if (!isValid)
                         {
                             var validationError = new ValidationError
@@ -280,8 +399,8 @@ public static class MinimalApiExtensions
                             };
                             return Results.BadRequest(validationError);
                         }
-
                     }
+
                     var dbSet = context.DbSet<TEntity>();
 
                     var entityEntries = new List<TEntity>();
@@ -299,14 +418,27 @@ public static class MinimalApiExtensions
 
                     await context.SaveChangesAsync();
 
-                    if (eventHub is not null)
+                    if (eventHub is not null && realtimeClientStore is not null)
                     {
-                        await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                        if (postAttribute?.Permission != null)
                         {
-                            Type = "batch-create",
-                            Data = entityEntries,
-                            Resource = mapGroupName.ToLower()
-                        });
+                            var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(postAttribute.Permission);
+                            await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "batch-create",
+                                Data = entityEntries,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
+                        else
+                        {
+                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "batch-create",
+                                Data = entityEntries,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
                     }
 
                     return Results.Ok(entityEntries);
@@ -322,25 +454,50 @@ public static class MinimalApiExtensions
 
         var updateEntitiesEndpoint = entityEndpointGroup
             .MapPut("/batch", async (
+                HttpContext httpContext,
                 [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                [FromServices, Optional] RealtimeClientStore? realtimeClientStore,
                 [FromServices] BaseDbContext context,
                 [FromBody] TEntity[] entities) =>
             {
                 try
                 {
+                    var putAttribute = typeof(TEntity).GetAttributeValue<AllowPut>();
+                    if (putAttribute is not null)
+                    {
+                        var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                        if (!permissions.Any(permission =>
+                                putAttribute.Permission.Any(permission.Equals)))
+                        {
+                            return Results.Unauthorized();
+                        }
+                    }
                     var dbSet = context.DbSet<TEntity>();
 
                     dbSet.UpdateRange(entities);
                     var result = await context.SaveChangesAsync();
 
-                    if (eventHub is not null)
+                    if (eventHub is not null && realtimeClientStore is not null)
                     {
-                        await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                        if (putAttribute?.Permission != null)
                         {
-                            Type = "update",
-                            Data = entities,
-                            Resource = mapGroupName.ToLower()
-                        });
+                            var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(putAttribute.Permission);
+                            await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "update",
+                                Data = entities,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
+                        else
+                        {
+                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            {
+                                Type = "update",
+                                Data = entities,
+                                Resource = mapGroupName.ToLower()
+                            });
+                        }
                     }
 
                     return Results.Ok($"Updated {result} items");
@@ -357,12 +514,24 @@ public static class MinimalApiExtensions
         var updateEntitiesWithFiltersEndpoint = entityEndpointGroup
             .MapPatch("/batch",
                 async (
+                    HttpContext httpContext,
                     [FromServices, Optional] IHubContext<EventHub>? eventHub,
+                    [FromServices, Optional] RealtimeClientStore? realtimeClientStore,
                     [FromServices] BaseDbContext context,
                     [FromQuery] string? filter, [FromBody] Dictionary<string, object> updateFields) =>
                 {
                     try
                     {
+                        var patchAttribute = typeof(TEntity).GetAttributeValue<AllowPatch>();
+                        if (patchAttribute is not null)
+                        {
+                            var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                            if (!permissions.Any(permission =>
+                                    patchAttribute.Permission.Any(permission.Equals)))
+                            {
+                                return Results.Unauthorized();
+                            }
+                        }
                         var dbSet = context.DbSet<TEntity>();
 
                         var entities = dbSet.AsQueryable();
@@ -408,14 +577,27 @@ public static class MinimalApiExtensions
                         dbSet.UpdateRange(entityList);
                         var result = await context.SaveChangesAsync();
 
-                        if (eventHub is not null)
+                        if (eventHub is not null && realtimeClientStore is not null)
                         {
-                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            if (patchAttribute?.Permission != null)
                             {
-                                Type = "batch-update",
-                                Data = entityList,
-                                Resource = mapGroupName.ToLower()
-                            });
+                                var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(patchAttribute.Permission);
+                                await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "batch-update",
+                                    Data = entityList,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
+                            else
+                            {
+                                await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "batch-update",
+                                    Data = entityList,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
                         }
 
                         return Results.Ok($"Updated {result} items");
@@ -432,6 +614,8 @@ public static class MinimalApiExtensions
         var deleteEntitiesEndpoint = entityEndpointGroup
             .MapDelete("/batch",
                 async (
+                    HttpContext httpContext,
+                    [FromServices] RealtimeClientStore realtimeClientStore,
                     [FromServices, Optional] IHubContext<EventHub>? eventHub,
                     [FromServices] BaseDbContext context,
                     [FromQuery] string? include,
@@ -439,6 +623,16 @@ public static class MinimalApiExtensions
                 {
                     try
                     {
+                        var deleteAttribute = typeof(TEntity).GetAttributeValue<AllowDelete>();
+                        if (deleteAttribute is not null)
+                        {
+                            var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
+                            if (!permissions.Any(permission =>
+                                    deleteAttribute.Permission.Any(permission.Equals)))
+                            {
+                                return Results.Unauthorized();
+                            }
+                        }
                         var dbSet = context.DbSet<TEntity>();
 
                         var entities = dbSet
@@ -462,12 +656,25 @@ public static class MinimalApiExtensions
 
                         if (eventHub is not null)
                         {
-                            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                            if (deleteAttribute?.Permission != null)
                             {
-                                Type = "batch-delete",
-                                Data = entities,
-                                Resource = mapGroupName.ToLower()
-                            });
+                                var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(deleteAttribute.Permission);
+                                await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "batch-delete",
+                                    Data = entities,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
+                            else
+                            {
+                                await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
+                                {
+                                    Type = "batch-delete",
+                                    Data = entities,
+                                    Resource = mapGroupName.ToLower()
+                                });
+                            }
                         }
 
                         return Results.Ok($"Deleted {result} items");
@@ -497,7 +704,7 @@ public static class MinimalApiExtensions
         Action<IEndpointConventionBuilder>? routeOptionsAction = null)
     {
         assembly ??= Assembly.GetEntryAssembly()!;
-        
+
         var entityTypes = assembly
             .GetTypes()
             .Where(t => t.GetInterfaces()

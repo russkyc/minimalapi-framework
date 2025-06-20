@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleProject", "SampleProj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Russkyc.MinimalApi.Framework.Core", "Russkyc.MinimalApi.Framework.Core\Russkyc.MinimalApi.Framework.Core.csproj", "{CFFF7301-C311-44F9-A14A-81549D6E022C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleRealtimeClientProject", "SampleRealtimeClientProject\SampleRealtimeClientProject.csproj", "{160F4F95-1FCF-43BF-B8B9-470A989FBC55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{CFFF7301-C311-44F9-A14A-81549D6E022C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CFFF7301-C311-44F9-A14A-81549D6E022C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CFFF7301-C311-44F9-A14A-81549D6E022C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{160F4F95-1FCF-43BF-B8B9-470A989FBC55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{160F4F95-1FCF-43BF-B8B9-470A989FBC55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{160F4F95-1FCF-43BF-B8B9-470A989FBC55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{160F4F95-1FCF-43BF-B8B9-470A989FBC55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

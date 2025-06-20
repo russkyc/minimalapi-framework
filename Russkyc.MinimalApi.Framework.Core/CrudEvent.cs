@@ -1,6 +1,6 @@
-﻿namespace Russkyc.MinimalApi.Framework;
+﻿namespace Russkyc.MinimalApi.Framework.Core;
 
-internal class CrudEvent
+public class CrudEvent
 {
     public required string Resource { get; set; }
     public required string Type { get; set; }

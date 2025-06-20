@@ -2,7 +2,7 @@
 using System.Reflection.Emit;
 using Microsoft.EntityFrameworkCore;
 
-namespace Russkyc.MinimalApi.Framework;
+namespace Russkyc.MinimalApi.Framework.Data;
 
 public static class DbContextBuilder
 {
