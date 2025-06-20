@@ -27,11 +27,11 @@ public static class WebApplicationExtensions
         if (FrameworkOptions.ApiPrefix != null)
         {
             webApplication.MapGroup(FrameworkOptions.ApiPrefix)
-                .MapAllEntityEndpoints<Guid>(FrameworkOptions.EntityClassesAssembly);
+                .MapAllEntityEndpoints(FrameworkOptions.EntityClassesAssembly);
         }
         else
         {
-            webApplication.MapAllEntityEndpoints<Guid>();
+            webApplication.MapAllEntityEndpoints();
         }
 
         if (FrameworkOptions.EnableRealtimeEvents)

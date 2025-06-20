@@ -550,7 +550,7 @@ public static class MinimalApiExtensions
         };
     }
 
-    public static void MapAllEntityEndpoints<TId>(this IEndpointRouteBuilder endpointBuilder, Assembly? assembly = null,
+    public static void MapAllEntityEndpoints(this IEndpointRouteBuilder endpointBuilder, Assembly? assembly = null,
         Action<IEndpointConventionBuilder>? routeOptionsAction = null)
     {
         assembly ??= Assembly.GetEntryAssembly()!;
@@ -562,8 +562,9 @@ public static class MinimalApiExtensions
 
         foreach (var entityType in entityTypes)
         {
+            var property = entityType.GetProperty("Id");
             var method = typeof(MinimalApiExtensions).GetMethod(nameof(MapEntityEndpoints))?
-                .MakeGenericMethod(entityType, typeof(TId));
+                .MakeGenericMethod(entityType, property!.PropertyType);
             method?.Invoke(null, [endpointBuilder, null, routeOptionsAction]);
         }
     }
