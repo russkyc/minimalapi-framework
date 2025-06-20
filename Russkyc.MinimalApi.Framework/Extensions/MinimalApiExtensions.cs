@@ -563,7 +563,7 @@ public static class MinimalApiExtensions
             var property = entityType.GetProperty("Id");
             var method = typeof(MinimalApiExtensions).GetMethod(nameof(MapEntityEndpoints))?
                 .MakeGenericMethod(entityType, property!.PropertyType);
-            method?.Invoke(null, [endpointBuilder, null, routeOptionsAction]);
+            method?.Invoke(null, [endpointBuilder, routeOptionsAction]);
         }
     }
 }
