@@ -257,31 +257,30 @@ Then you will have this result:
 
 #### Filter query support (with the help of DynamicExpressionParser in System.Linq.Dynamic.Core)
 
-Entities can now be filtered with the `filter` queryParam and supports standard expressions. Parameters should be
-prefixed with `@` in order to be valid, eg; a parameter named `Content` should be used as `@Content`. Here are a few
+Entities can now be filtered with the `filter` queryParam and supports standard expressions. Here are a few
 examples:
 
 ```http
-GET /api/sampleentity?filter=@Content.StartsWith("hello")
+GET /api/sampleentity?filter=Content.StartsWith("hello")
 ```
 
 ```http
-GET /api/sampleentity?filter=@Content.StartsWith("hi") && !@Content.Contains("user")
+GET /api/sampleentity?filter=Content.StartsWith("hi") && !Content.Contains("user")
 ```
 
 ```http
-GET /api/sampleentity?filter=@Count == 1 || @Count > 8
+GET /api/sampleentity?filter=Count == 1 || Count > 8
 ```
 
 ```http
-GET /api/sampleentity?filter=@ContactPerson != null
+GET /api/sampleentity?filter=ContactPerson != null
 ```
 
 These are visualized for readability, in actual use, the filter value should be URL Encoded.
 
 #### Ordering Support
 
-Entities can now be ordered using the `orderBy` and `orderByDescending` query parameters. Multiple properties can be specified for ordering, separated by commas. The first property will be ordered using `OrderBy` or `OrderByDescending`, and subsequent properties will be ordered using `ThenBy` or `ThenByDescending`.
+Entities can be ordered using the `orderBy` and `orderByDescending` query parameters. Multiple properties can be specified for ordering, separated by commas. The first property will be ordered using `OrderBy` or `OrderByDescending`, and subsequent properties will be ordered using `ThenBy` or `ThenByDescending`.
 
 ```http
 GET /api/sampleentity?orderBy=property,embeddedEntity.property2&orderByDescending=true
@@ -494,12 +493,8 @@ public class EntityEvent<T>
 - The `Type` property will be the type of event, eg; `created`, `updated`, `deleted`, `batch-created`, `batch-updated`, `batch-deleted`
 - The `Data` property contains the data being returned by that resource method.
 
-## Important things to consider
+## This is not recommended if...
 
-- When using generic implementations like this on the server side,
-  business logic is now moved into the client and becomes a client concern.
-- If your API needs to do complex business logic over the CRUD functionality,
-  please consider implementing custom endpoints instead of using generic endpoints
-  such as this.
-- There are no DTOs or other data transformation mechanisms in place.
-  The data returned is the same as the entity class, so be careful with sensitive data.
+- You need a custom api endpoints outside of basic CRUD operations.
+- There is complex business logic that needs to be done server side.
+- Features require lots of code changes that defeat the purpose of a simple CRUD api.
