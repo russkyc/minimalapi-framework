@@ -501,5 +501,5 @@ public class EntityEvent<T>
 - If your API needs to do complex business logic over the CRUD functionality,
   please consider implementing custom endpoints instead of using generic endpoints
   such as this.
-- There is currently no implementation for validation and DTO mapping,
-  this can be added later as the project updates.
+- There are no DTOs or other data transformation mechanisms in place.
+  The data returned is the same as the entity class, so be careful with sensitive data.
