@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Data;
 using Russkyc.MinimalApi.Framework.Options;
@@ -42,7 +43,17 @@ public static class ServiceCollectionExtensions
         if (FrameworkOptions.EnableApiDocs)
         {
             serviceCollection.AddEndpointsApiExplorer();
-            serviceCollection.AddSwaggerGen();
+            serviceCollection.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition("ApiPermissions", new OpenApiSecurityScheme
+                {
+                    Description = "Contains the permissions required to access permission-protected endpoints",
+                    Name = "x-api-permission",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    BearerFormat = "vxx,vsg,wrw,ttw"
+                });
+            });
         }
 
         if (FrameworkOptions.EnableRealtimeEvents)

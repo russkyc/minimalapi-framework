@@ -3,7 +3,7 @@ using Russkyc.MinimalApi.Framework.Core.Attributes;
 
 namespace SampleProject;
 
-[AllowPost("xcxs")]
+[AllowPost("xcx")]
 public class SampleEmbeddedEntity : DbEntity<Guid>
 {
     public string Property2 { get; set; }

@@ -31,58 +31,51 @@ public static class MinimalApiExtensions
 
         var getCollectionEndpoint = entityEndpointGroup
             .MapGet("/", GetCollectionHandler<TEntity>())
+            .Produces<PaginatedCollection<TEntity>>()
+            .Produces<IEnumerable<TEntity>>()
             .WithName($"AllowGet a {mapGroupName} collection")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var getSingleEntityEndpoint = entityEndpointGroup
             .MapGet("/{id}", GetSingleEntityHandler<TEntity, TKeyType>())
+            .Produces<TEntity>()
             .WithDescription($"AllowGet a single {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var addEntityEndpoint = entityEndpointGroup
             .MapPost("/", AddEntityHandler<TEntity, TKeyType>(mapGroupName))
+            .Produces<TEntity>()
             .WithDescription($"Add a single {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var updateEntityEndpoint = entityEndpointGroup
             .MapPatch("/", UpdateEntityHandler<TEntity>(mapGroupName))
+            .Produces<TEntity>()
             .WithDescription($"Update a single {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var deleteEntityEndpoint = entityEndpointGroup
             .MapDelete("/{id}", DeleteEntityHandler<TEntity, TKeyType>(mapGroupName))
+            .Produces<TEntity>()
             .WithDescription($"AllowDelete a single {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var addEntitiesEndpoint = entityEndpointGroup
             .MapPost("/batch", AddEntitiesHandler<TEntity, TKeyType>(mapGroupName))
+            .Produces<IEnumerable<TEntity>>()
             .WithDescription($"Batch Insert {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var updateEntitiesEndpoint = entityEndpointGroup
             .MapPut("/batch", UpdateEntitiesHandler<TEntity>(mapGroupName))
+            .Produces<IEnumerable<TEntity>>()
             .WithDescription($"Batch update {mapGroupName}")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var updateEntitiesWithFiltersEndpoint = entityEndpointGroup
             .MapPatch("/batch", UpdateEntitiesWithFiltersHandler<TEntity>(mapGroupName))
+            .Produces<IEnumerable<TEntity>>()
             .WithDescription($"Batch update {mapGroupName} with filters and dynamic fields")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
         var deleteEntitiesEndpoint = entityEndpointGroup
             .MapDelete("/batch", DeleteEntitiesHandler<TEntity>(mapGroupName))
+            .Produces<IEnumerable<TEntity>>()
             .WithDescription($"Batch delete {mapGroupName} based on query parameters")
-            .WithTags(mapGroupName)
-            .WithOpenApi();
-
+            .WithTags(mapGroupName);
+        
         routeOptionsAction?.Invoke(addEntityEndpoint);
         routeOptionsAction?.Invoke(getCollectionEndpoint);
         routeOptionsAction?.Invoke(getSingleEntityEndpoint);
@@ -113,24 +106,21 @@ public static class MinimalApiExtensions
         if (eventHub is null || realtimeClientStore is null)
             return;
 
+        var crudEvent = new CrudEvent
+        {
+            Type = eventType,
+            Data = data,
+            Resource = resource
+        };
+
         if (permissions != null)
         {
             var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(permissions);
-            await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", new CrudEvent
-            {
-                Type = eventType,
-                Data = data,
-                Resource = resource
-            });
+            await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", crudEvent);
         }
         else
         {
-            await eventHub.Clients.All.SendAsync("crud-event", new CrudEvent
-            {
-                Type = eventType,
-                Data = data,
-                Resource = resource
-            });
+            await eventHub.Clients.All.SendAsync("crud-event", crudEvent);
         }
     }
 
