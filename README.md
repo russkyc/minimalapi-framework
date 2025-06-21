@@ -15,6 +15,9 @@ to create a quick backend for prototyping apps that use CRUD operations.
 <img src="Resources/scalar.jpeg" style="width: 100%;" />
 
 > ### ✨ What's New:
+> v1.0.0
+> - Shorter setup code for new projects [learn more...](#getting-started)
+> - Support for permission control in endpoints [learn more...](#advanced-route-options)
 > v0.10.0
 > - Support for data annotations validation [learn more...](#data-annotations-validation)
 > 
