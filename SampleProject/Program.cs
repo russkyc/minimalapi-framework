@@ -13,12 +13,12 @@ MinimalApiFramework
 [RequirePermission(ApiMethod.Get, "xcv")]
 public class SampleEmbeddedEntity : DbEntity<int>
 {
-    public string Property2 { get; set; }
+    public required string Property2 { get; set; }
 }
 
 public class SampleEntity : DbEntity<Guid>
 {
     [Required, MinLength(5)]
-    public string Property { get; set; }
+    public required string Property { get; set; }
     public virtual SampleEmbeddedEntity? EmbeddedEntity { get; set; }
 }
