@@ -73,7 +73,7 @@ public static class MinimalApiExtensions
             .Produces<IEnumerable<TEntity>>()
             .WithDescription($"Batch delete {mapGroupName} based on query parameters")
             .WithTags(mapGroupName);
-        
+
         routeOptionsAction?.Invoke(addEntityEndpoint);
         routeOptionsAction?.Invoke(getCollectionEndpoint);
         routeOptionsAction?.Invoke(getSingleEntityEndpoint);
@@ -86,17 +86,22 @@ public static class MinimalApiExtensions
         routeOptionsAction?.Invoke(deleteEntitiesEndpoint);
     }
 
-    private static bool HasPermission(HttpContext httpContext, string[]? requiredPermissions)
+    private static bool HasPermission<TEntity>(HttpContext httpContext, ApiMethod method)
     {
-        if (requiredPermissions == null) return true;
+        var permissionsAttributes = typeof(TEntity).GetAttributeValue<RequirePermission>();
+        if (!permissionsAttributes.Any()) return true;
+        var methods = permissionsAttributes.Select(attribute => attribute.Method);
+        if (!methods.Contains(method)) return true;
+        var attributePermissions = permissionsAttributes
+            .Where(attribute => attribute.Method == method)
+            .SelectMany(attribute => attribute.Permission);
         var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
-        return permissions.Any(permission => requiredPermissions.Any(permission.Equals));
+        return permissions.Any(permission => attributePermissions.Any(permission.Equals));
     }
 
-    private static async Task BroadcastCrudEvent(
+    private static async Task BroadcastCrudEvent<TEntity>(
         IHubContext<EventHub>? eventHub,
         RealtimeClientStore? realtimeClientStore,
-        string[]? permissions,
         string eventType,
         object data,
         string resource)
@@ -111,10 +116,15 @@ public static class MinimalApiExtensions
             Resource = resource
         };
 
-        if (permissions != null)
+        var permissionsAttributes = typeof(TEntity).GetAttributeValue<RequirePermission>();
+        if (permissionsAttributes.Length != 0)
         {
+            var permissions = permissionsAttributes
+                .SelectMany(attribute => attribute.Permission)
+                .ToArray();
             var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(permissions);
-            await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync(ConfigurationStrings.RealtimeEvent, crudEvent);
+            await eventHub.Clients.AllExcept(unauthorizedClients)
+                .SendAsync(ConfigurationStrings.RealtimeEvent, crudEvent);
         }
         else
         {
@@ -143,10 +153,9 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var getAttribute = typeof(TEntity).GetAttributeValue<AllowGet>();
-                if (getAttribute is not null && !HasPermission(httpContext, getAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Get))
                     return Results.Unauthorized();
-
+                
                 var dbSet = context.DbSet<TEntity>();
                 var entities = dbSet.AsNoTracking();
 
@@ -206,8 +215,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var getAttribute = typeof(TEntity).GetAttributeValue<AllowGet>();
-                if (getAttribute is not null && !HasPermission(httpContext, getAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Get))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -241,10 +249,8 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var postAttribute = typeof(TEntity).GetAttributeValue<AllowPost>();
-                if (postAttribute is not null && !HasPermission(httpContext, postAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Post))
                     return Results.Unauthorized();
-
                 var dbSet = context.DbSet<TEntity>();
 
                 if (!TryValidateEntity(entity, out var errors))
@@ -265,7 +271,8 @@ public static class MinimalApiExtensions
                 var entryEntity = await dbSet.AddAsync(entity);
                 await context.SaveChangesAsync();
 
-                await BroadcastCrudEvent(eventHub, realtimeClientStore, postAttribute?.Permission, "create", entryEntity.Entity, mapGroupName.ToLower());
+                await BroadcastCrudEvent<TEntity>(eventHub, realtimeClientStore, "create",
+                    entryEntity.Entity, mapGroupName.ToLower());
 
                 return Results.Ok(entryEntity.Entity);
             }
@@ -288,15 +295,15 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var patchAttribute = typeof(TEntity).GetAttributeValue<AllowPatch>();
-                if (patchAttribute is not null && !HasPermission(httpContext, patchAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
-
+                
                 var dbSet = context.DbSet<TEntity>();
                 var entryEntity = dbSet.Update(entity);
                 await context.SaveChangesAsync();
 
-                await BroadcastCrudEvent(eventHub, realtimeClientStore, patchAttribute?.Permission, "update", entryEntity.Entity, mapGroupName.ToLower());
+                await BroadcastCrudEvent<TEntity>(eventHub, realtimeClientStore, "update",
+                    entryEntity.Entity, mapGroupName.ToLower());
 
                 return Results.Ok(entryEntity.Entity);
             }
@@ -319,8 +326,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var deleteAttribute = typeof(TEntity).GetAttributeValue<AllowDelete>();
-                if (deleteAttribute is not null && !HasPermission(httpContext, deleteAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Delete))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -331,7 +337,8 @@ public static class MinimalApiExtensions
                 dbSet.Remove(entity);
                 await context.SaveChangesAsync();
 
-                await BroadcastCrudEvent(eventHub, realtimeClientStore, deleteAttribute?.Permission, "delete", entity, mapGroupName.ToLower());
+                await BroadcastCrudEvent<TEntity>(eventHub, realtimeClientStore, "delete", entity,
+                    mapGroupName.ToLower());
 
                 return Results.Ok(entity);
             }
@@ -354,8 +361,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var postAttribute = typeof(TEntity).GetAttributeValue<AllowPost>();
-                if (postAttribute is not null && !HasPermission(httpContext, postAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Post))
                     return Results.Unauthorized();
 
                 foreach (var entity in entities)
@@ -385,7 +391,8 @@ public static class MinimalApiExtensions
 
                 await context.SaveChangesAsync();
 
-                await BroadcastCrudEvent(eventHub, realtimeClientStore, postAttribute?.Permission, "batch-create", entityEntries, mapGroupName.ToLower());
+                await BroadcastCrudEvent<TEntity>(eventHub, realtimeClientStore, "batch-create",
+                    entityEntries, mapGroupName.ToLower());
 
                 return Results.Ok(entityEntries);
             }
@@ -408,15 +415,15 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var putAttribute = typeof(TEntity).GetAttributeValue<AllowPut>();
-                if (putAttribute is not null && !HasPermission(httpContext, putAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Put))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
                 dbSet.UpdateRange(entities);
                 var result = await context.SaveChangesAsync();
 
-                await BroadcastCrudEvent(eventHub, realtimeClientStore, putAttribute?.Permission, "update", entities, mapGroupName.ToLower());
+                await BroadcastCrudEvent<TEntity>(eventHub, realtimeClientStore, "update", entities,
+                    mapGroupName.ToLower());
 
                 return Results.Ok($"Updated {result} items");
             }
@@ -439,8 +446,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var patchAttribute = typeof(TEntity).GetAttributeValue<AllowPatch>();
-                if (patchAttribute is not null && !HasPermission(httpContext, patchAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -487,7 +493,8 @@ public static class MinimalApiExtensions
                 dbSet.UpdateRange(entityList);
                 var result = await context.SaveChangesAsync();
 
-                await BroadcastCrudEvent(eventHub, realtimeClientStore, patchAttribute?.Permission, "batch-update", entityList, mapGroupName.ToLower());
+                await BroadcastCrudEvent<TEntity>(eventHub, realtimeClientStore, "batch-update",
+                    entityList, mapGroupName.ToLower());
 
                 return Results.Ok($"Updated {result} items");
             }
@@ -511,8 +518,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                var deleteAttribute = typeof(TEntity).GetAttributeValue<AllowDelete>();
-                if (deleteAttribute is not null && !HasPermission(httpContext, deleteAttribute.Permission))
+                if (!HasPermission<TEntity>(httpContext, ApiMethod.Delete))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -537,7 +543,8 @@ public static class MinimalApiExtensions
 
                 if (eventHub is not null)
                 {
-                    await BroadcastCrudEvent(eventHub, realtimeClientStore, deleteAttribute?.Permission, "batch-delete", entities, mapGroupName.ToLower());
+                    await BroadcastCrudEvent<TEntity>(eventHub, realtimeClientStore, "batch-delete",
+                        entities, mapGroupName.ToLower());
                 }
 
                 return Results.Ok($"Deleted {result} items");

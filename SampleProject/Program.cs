@@ -2,13 +2,15 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Russkyc.MinimalApi.Framework.Server;
 using Russkyc.MinimalApi.Framework.Core;
+using Russkyc.MinimalApi.Framework.Core.Access;
 using Russkyc.MinimalApi.Framework.Core.Attributes;
 
 MinimalApiFramework
     .CreateDefault(options => options.UseSqlite("Data Source=test.sqlite"))
     .Run();
 
-[AllowPost("xcx")]
+[RequirePermission(ApiMethod.Post,"xcx")]
+[RequirePermission(ApiMethod.Get, "xcv")]
 public class SampleEmbeddedEntity : DbEntity<int>
 {
     public string Property2 { get; set; }
