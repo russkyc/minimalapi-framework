@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Russkyc.MinimalApi.Framework.Options;
+namespace Russkyc.MinimalApi.Framework.Server.Options;
 
 public static class FrameworkOptions
 {

@@ -2,7 +2,7 @@
 using System.Reflection.Emit;
 using Microsoft.EntityFrameworkCore;
 
-namespace Russkyc.MinimalApi.Framework.Data;
+namespace Russkyc.MinimalApi.Framework.Server.Data;
 
 public static class DbContextBuilder
 {
@@ -15,7 +15,6 @@ public static class DbContextBuilder
             TypeAttributes.Public | TypeAttributes.Class,
             typeof(BaseDbContext));
 
-        // Define the constructor
         var constructorBuilder = typeBuilder.DefineConstructor(
             MethodAttributes.Public,
             CallingConventions.Standard,

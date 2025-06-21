@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Russkyc.MinimalApi.Framework.Extensions;
-using Russkyc.MinimalApi.Framework.Options;
+using Russkyc.MinimalApi.Framework.Server.Extensions;
+using Russkyc.MinimalApi.Framework.Server.Options;
 
-namespace Russkyc.MinimalApi.Framework;
+namespace Russkyc.MinimalApi.Framework.Server;
 
 public static class MinimalApiFramework
 {

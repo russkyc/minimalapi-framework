@@ -2,11 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Russkyc.MinimalApi.Framework.Core;
-using Russkyc.MinimalApi.Framework.Data;
-using Russkyc.MinimalApi.Framework.Options;
-using Russkyc.MinimalApi.Framework.Realtime;
+using Russkyc.MinimalApi.Framework.Server.Data;
+using Russkyc.MinimalApi.Framework.Server.Options;
+using Russkyc.MinimalApi.Framework.Server.Realtime;
 
-namespace Russkyc.MinimalApi.Framework.Extensions;
+namespace Russkyc.MinimalApi.Framework.Server.Extensions;
 
 public static class ServiceCollectionExtensions
 {
@@ -48,7 +48,7 @@ public static class ServiceCollectionExtensions
                 options.AddSecurityDefinition("ApiPermissions", new OpenApiSecurityScheme
                 {
                     Description = "Contains the permissions required to access permission-protected endpoints",
-                    Name = "x-api-permission",
+                    Name = ConfigurationStrings.ApiPermissionHeader,
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.ApiKey,
                     BearerFormat = "vxx,vsg,wrw,ttw"

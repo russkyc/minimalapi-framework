@@ -1,8 +1,8 @@
 ﻿namespace Russkyc.MinimalApi.Framework.Core;
 
-public class EntityEvent<T>
+public class RealtimeEvent
 {
     public required string Resource { get; set; }
     public required string Type { get; set; }
-    public T? Data { get; set; }
+    public dynamic? Data { get; set; }
 }

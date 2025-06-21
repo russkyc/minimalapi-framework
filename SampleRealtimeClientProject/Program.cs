@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Russkyc.MinimalApi.Framework.Core;
 
 var connection = new HubConnectionBuilder()
-    .WithUrl("https://localhost:7102/realtime", options =>
+    .WithUrl($"https://localhost:7102{ConfigurationStrings.RealtimeHubEndpoint}", options =>
     {
-        options.Headers.Add("x-api-permission", "xcxs");
+        options.Headers.Add(ConfigurationStrings.ApiPermissionHeader, "xcxs");
     })
     .WithAutomaticReconnect()
     .Build();
 
-connection.On<CrudEvent>("crud-event", obj =>
+connection.On<RealtimeEvent>(ConfigurationStrings.RealtimeEvent, obj =>
 {
     var serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions()
     {

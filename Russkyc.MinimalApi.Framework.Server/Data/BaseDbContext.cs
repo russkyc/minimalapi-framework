@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace Russkyc.MinimalApi.Framework.Data;
+namespace Russkyc.MinimalApi.Framework.Server.Data;
 
 public class BaseDbContext : DbContext
 {

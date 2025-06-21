@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Russkyc.MinimalApi.Framework", "Russkyc.MinimalApi.Framework\Russkyc.MinimalApi.Framework.csproj", "{4D5554ED-38B1-4BBC-A177-63E43781227D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Russkyc.MinimalApi.Framework.Server", "Russkyc.MinimalApi.Framework.Server\Russkyc.MinimalApi.Framework.Server.csproj", "{4D5554ED-38B1-4BBC-A177-63E43781227D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleProject", "SampleProject\SampleProject.csproj", "{AE6F8529-EB8E-404B-9277-561C9DF31361}"
 EndProject

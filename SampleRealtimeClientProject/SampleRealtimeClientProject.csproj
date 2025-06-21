@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Russkyc.MinimalApi.Framework.Core\Russkyc.MinimalApi.Framework.Core.csproj" />
+      <ProjectReference Include="..\Russkyc.MinimalApi.Framework.Server\Russkyc.MinimalApi.Framework.Server.csproj" />
     </ItemGroup>
 
 </Project>

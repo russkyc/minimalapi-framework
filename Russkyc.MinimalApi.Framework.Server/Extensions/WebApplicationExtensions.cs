@@ -1,7 +1,7 @@
-﻿using Russkyc.MinimalApi.Framework.Options;
+﻿using Russkyc.MinimalApi.Framework.Server.Options;
 using Scalar.AspNetCore;
 
-namespace Russkyc.MinimalApi.Framework.Extensions;
+namespace Russkyc.MinimalApi.Framework.Server.Extensions;
 
 public static class WebApplicationExtensions
 {

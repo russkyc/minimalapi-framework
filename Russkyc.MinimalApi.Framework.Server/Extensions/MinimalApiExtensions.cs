@@ -8,11 +8,11 @@ using MiniValidation;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Core.Access;
 using Russkyc.MinimalApi.Framework.Core.Attributes;
-using Russkyc.MinimalApi.Framework.Data;
-using Russkyc.MinimalApi.Framework.Options;
-using Russkyc.MinimalApi.Framework.Realtime;
+using Russkyc.MinimalApi.Framework.Server.Data;
+using Russkyc.MinimalApi.Framework.Server.Options;
+using Russkyc.MinimalApi.Framework.Server.Realtime;
 
-namespace Russkyc.MinimalApi.Framework.Extensions;
+namespace Russkyc.MinimalApi.Framework.Server.Extensions;
 
 public static class MinimalApiExtensions
 {
@@ -104,7 +104,7 @@ public static class MinimalApiExtensions
         if (eventHub is null || realtimeClientStore is null)
             return;
 
-        var crudEvent = new CrudEvent
+        var crudEvent = new RealtimeEvent
         {
             Type = eventType,
             Data = data,
@@ -114,11 +114,11 @@ public static class MinimalApiExtensions
         if (permissions != null)
         {
             var unauthorizedClients = realtimeClientStore.GetClientIdsWithoutPermissions(permissions);
-            await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync("crud-event", crudEvent);
+            await eventHub.Clients.AllExcept(unauthorizedClients).SendAsync(ConfigurationStrings.RealtimeEvent, crudEvent);
         }
         else
         {
-            await eventHub.Clients.All.SendAsync("crud-event", crudEvent);
+            await eventHub.Clients.All.SendAsync(ConfigurationStrings.RealtimeEvent, crudEvent);
         }
     }
 
@@ -253,6 +253,7 @@ public static class MinimalApiExtensions
                     {
                         Message = $"Validation for {entity.GetType().Name} failed.",
                         Errors = errors
+                            .DistinctBy(error => error.Value)
                     };
                     return Results.BadRequest(validationError);
                 }

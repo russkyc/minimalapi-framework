@@ -1,4 +1,4 @@
-﻿namespace Russkyc.MinimalApi.Framework.Realtime;
+﻿namespace Russkyc.MinimalApi.Framework.Server.Realtime;
 
 public class RealtimeClientStore
 {
