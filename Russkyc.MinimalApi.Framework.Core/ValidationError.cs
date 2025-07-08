@@ -2,6 +2,6 @@
 
 public class ValidationError
 {
-    public string Message { get; set; }
-    public IDictionary<string,string[]> Errors { get; set; }
+    public required string Message { get; set; }
+    public required IEnumerable<KeyValuePair<string, string[]>> Errors { get; set; }
 }

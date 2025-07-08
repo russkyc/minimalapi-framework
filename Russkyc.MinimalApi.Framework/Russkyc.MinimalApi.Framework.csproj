@@ -6,9 +6,12 @@
         <Nullable>enable</Nullable>
         <OutputType>library</OutputType>
         <UserSecretsId>07fb0dbb-8872-4f52-a7b7-67262f8f411e</UserSecretsId>
-        <PackageReleaseNotes>New Additions:
-- Add data annotations validation
-Read more in the updated documentation</PackageReleaseNotes>
+        <PackageReleaseNotes>Whats New:
+- Scalar Integartion
+- Shorter setup code
+- Permissions based access control
+
+Note: This update contains breaking changes.</PackageReleaseNotes>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -21,7 +24,7 @@ Read more in the updated documentation</PackageReleaseNotes>
         <PackageIcon>PackageIcon.png</PackageIcon>
         <PackageProjectUrl>https://github.com/russkyc/minimalapi-framework</PackageProjectUrl>
         <RepositoryUrl>https://github.com/russkyc/minimalapi-framework</RepositoryUrl>
-        <Version>0.10.0</Version>
+        <Version>1.0.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IsPackable>true</IsPackable>
     </PropertyGroup>
@@ -50,6 +53,8 @@ Read more in the updated documentation</PackageReleaseNotes>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.16" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.16" />
         <PackageReference Include="MiniValidation" Version="0.9.2" />
+        <PackageReference Include="scalar.aspnetcore" Version="2.4.22" />
+        <PackageReference Include="Scalar.AspNetCore.Swashbuckle" Version="2.4.22" />
         <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.5" />
     </ItemGroup>
 
