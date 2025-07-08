@@ -18,8 +18,6 @@ to create a quick backend for prototyping apps that use CRUD operations.
 
 <img src=".github/resources/images/scalar-api-docs.jpeg" style="width: 100%;" />
 
----
-
 ## 📓 Table of Contents
 
 1. [What's New](#whats-new)
@@ -41,22 +39,16 @@ to create a quick backend for prototyping apps that use CRUD operations.
    - [Realtime Support](#realtime-support)
 6. [Special Thanks](#special-thanks)
 
----
-
 ## ✨ What's New (v1.0.0):
 - Scalar API Docs integration
 - Shorter setup code for new projects [learn more...](#getting-started)
 - Support for permission control in endpoints [learn more...](#permissions-based-access-control)
-
----
 
 ## ❔ Potential Use-Cases
 
 - Quick API prototyping
 - Small projects that only require CRUD functionality
 - Frontend Testing (if a backend API is needed)
-
----
 
 ## 🎉 Getting Started
 
@@ -135,8 +127,6 @@ await webApplication.RunAsync();
 // Define your entity classes here or in a separate file
 
 ```
-
----
 
 ## 🔧 Configuration
 
@@ -258,8 +248,6 @@ public static class FrameworkRealtimeOptions
 
 **Properties:**
 - `RealtimeEventsEndpoint`: The SignalR endpoint for realtime events. (default: `/crud-events`)
-
----
 
 ## ⚡ Advanced Features
 
@@ -488,8 +476,6 @@ Content-Type: application/json
 DELETE /api/sampleentity/batch?filter=@Count > 8
 ```
 
----
-
 ### Data Annotations Validation
 Properties with data annotations such as `[Required]`, `[StringLength]`, and others will now be validated automatically
 when creating entities. If validation fails, a `400 Bad Request` response will be returned with the validation errors.
@@ -518,8 +504,6 @@ public class ValidationError
 
 > [!NOTE]
 > Data validation is implemented using [MiniValidation](https://github.com/DamianEdwards/MiniValidation). Fluent validation interfaces are not supported.
-
----
 
 ### Permissions Based Access Control
 
@@ -584,7 +568,6 @@ x-api-permission: perm2
 > [!WARNING]
 > Header-based permission control is a simple approach and should not be considered as secure as standard methods like JWT, Cookie, or Basic Authentication.
 > For public or production environments that require strong security, use .NET `Authentication`/`Authorization` with JWT or a custom authentication solution instead of static permission strings.
----
 
 ### Realtime Support
 
@@ -653,8 +636,6 @@ public class EntityEvent<T>
 - The `Resource` property will be the name of the entity in lowercase, eg; "sampleentity".
 - The `Type` property will be the type of event, eg; `created`, `updated`, `deleted`, `batch-created`, `batch-updated`, `batch-deleted`
 - The `Data` property contains the data being returned by that resource method.
-
----
 
 ## 💝 Donate and Support Development
 
