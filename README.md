@@ -82,6 +82,8 @@ await MinimalApiFramework
 // Define your entity classes here or in a separate file
 ```
 
+See the [Minimal Sample Project](https://github.com/russkyc/minimalapi-framework/tree/master/MinimalServerSample) for the complete code.
+
 ### Standard Setup
 
 ```csharp
@@ -127,6 +129,8 @@ await webApplication.RunAsync();
 // Define your entity classes here or in a separate file
 
 ```
+
+See the [Standard Sample Project](https://github.com/russkyc/minimalapi-framework/tree/master/StandardServerSample) for the complete code.
 
 ## 🔧 Configuration
 
@@ -616,6 +620,8 @@ connection.On<RealtimeEvent>(ConfigurationStrings.RealtimeEvent, obj =>
 await connection.StartAsync();
 Console.Read();
 ```
+
+See the [Minimal Client Sample Project](https://github.com/russkyc/minimalapi-framework/tree/master/MinimalClientSample) for the complete code.
 
 Each event returned is an `EntityEvent<T>` type, where T is the type of data
 returned by the resource event that triggered the websocket message. Eg; when
