@@ -1,4 +1,8 @@
-﻿<h2 align="center">Russkyc.MinimalApi.Framework - A Generic API Crud Generator for EntityFrameworkCore</h2>
+﻿<a href="https://www.nuget.org/packages/Russkyc.MinimalApi.Framework">
+    <img src=".github/resources/images/banner.svg" style="width: 100%;" />
+</a>
+
+<h2 align="center">Russkyc.MinimalApi.Framework - Create Rest API's with minimal configuration</h2>
 
 <p align="center">
     <img src="https://img.shields.io/nuget/v/Russkyc.MinimalApi.Framework?color=1f72de" alt="Nuget">
@@ -12,7 +16,7 @@ Dynamically generates a generic CRUD API implementation
 backed with Entity Framework Core and Minimal API. This can be used
 to create a quick backend for prototyping apps that use CRUD operations.
 
-<img src="Resources/scalar.jpeg" style="width: 100%;" />
+<img src=".github/resources/images/scalar-api-docs.jpeg" style="width: 100%;" />
 
 > ### ✨ What's New:
 > v1.0.0
@@ -38,93 +42,161 @@ to create a quick backend for prototyping apps that use CRUD operations.
 
 To install the `Russkyc.MinimalApi.Framework` package, you can use the NuGet Package Manager or the .NET CLI.
 
-#### Using .NET CLI
-
-Run the following command in your terminal:
-
-```sh
-dotnet add package Russkyc.MinimalApi.Framework
-```
-
-### Setup
-
 Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 
 1. **Create a new ASP.NET Core Web API project** if you don't already have one.
+2. **Install the `Russkyc.MinimalApi.Framework` NuGet package** using the cli or the nuget package manager
+3. **Install an EntityFramework Provider** like `Microsoft.EntityFrameworkCore.InMemory` or `Microsoft.EntityFrameworkCore.Sqlite` depending on your database choice.
+2. **Add the required services, configuration, and mappings** in the `Program.cs` file:
 
-2. **Add the required services and API endpoint mappings** in the `Program.cs` file:
+There are two options for setting up the framework in your project, a minimal setup and a more granular standard setup.
 
-    ```csharp
-    using System.Reflection;
-    using Microsoft.EntityFrameworkCore;
-    using Russkyc.MinimalApi.Framework;
-
-    var builder = WebApplication.CreateBuilder(args);
-
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
-
-    var assembly = Assembly.GetExecutingAssembly();
-
-    // Add Entity Context Services
-    builder.Services.AddDbContextService(assembly, options => options.UseInMemoryDatabase("sample"));
-
-    // Uncomment to enable realtime events
-    // by default the endpoint used is "/crud-events"
-    // this can be changed by providing a string parameter, eg; `MapRealtimeHub("/api-events")`
-    builder.Services.AddRealtimeService();
-
-    var app = builder.Build();
-
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
-
-    app.UseHttpsRedirection();
-
-    // Map Entity CRUD Endpoints
-    app.MapGroup("api")
-        .MapAllEntityEndpoints<int>(assembly);
-
-    // Map Realtime Hub
-    app.MapRealtimeHub();
-
-    app.Run();
-    ```
-
-### Setting-up entity classes
-
-All entity classes should inherit from the DbEntity<TKeyType> abstract class.
-Where `TKeyType` is the Id type of the entity.
-
-**SampleEntity Class**
+### Minimal Setup
 
 ```csharp
-public class SampleEntity : DbEntity<int>
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework;
+using Russkyc.MinimalApi.Framework.Core;
+using Russkyc.MinimalApi.Framework.Core.Access;
+using Russkyc.MinimalApi.Framework.Core.Attributes;
+
+await MinimalApiFramework
+    .CreateDefault(options => options.UseSqlite("Data Source=test.sqlite"))
+    .RunAsync();
+
+// Define your entity classes here or in a separate file
+```
+
+### Standard Setup
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework.Core;
+using Russkyc.MinimalApi.Framework.Core.Access;
+using Russkyc.MinimalApi.Framework.Core.Attributes;
+using Russkyc.MinimalApi.Framework.Extensions;
+using Russkyc.MinimalApi.Framework.Options;
+
+var builder = WebApplication.CreateBuilder();
+
+// Configure
+FrameworkOptions.MapIndexToApiDocs = true;
+FrameworkDbContextOptions.DbContextConfiguration = options => options.UseSqlite("Data Source=test.sqlite");
+
+// Add required services
+builder.Services
+    .AddMinimalApiFramework();
+
+var webApplication = builder.Build();
+
+// Add required endpoints
+// Optionally, you can disable entity endpoints mapping and map them manually
+webApplication.UseMinimalApiFramework(mapEntityEndpoints: false);
+
+// If mapping is disabled, you can manually map entity endpoints
+// Manual entity endpoints mapping for more granular control
+webApplication.MapEntityEndpoints<SampleEntity, Guid>(options =>
 {
-    public string Property { get; set; }
-    public virtual SampleEmbeddedEntity EmbeddedEntity { get; set; }
+    // Other endpoint options can be configured here
+});
+
+// Sample prefixed mapping
+// Same effect can be achieved when using the minimal setup
+// by using the `FrameworkOptions` and setting `ApiPrefix`
+var apiGroup = webApplication.MapGroup("nested");
+apiGroup.MapEntityEndpoints<SampleEmbeddedEntity, int>();
+
+await webApplication.RunAsync();
+
+// Define your entity classes here or in a separate file
+
+```
+
+---
+
+### Configuration
+
+The framework provides several static options classes to customize its behavior.
+You can set these options before your application startup in your `Program.cs`.
+
+#### Example Configuration
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework.Options;
+
+// Required
+// This is needed to set up the database provider for entity framework core.
+FrameworkDbContextOptions.DbContextConfiguration = options => options.UseSqlite("Data Source=test.sqlite");
+
+// Optional
+FrameworkOptions.EnableApiDocs = true;
+FrameworkApiDocsOptions.EnableSidebar = true;
+FrameworkDbContextOptions.DatabaseAction = DatabaseAction.EnsureCreated;
+FrameworkRealtimeOptions.RealtimeEventsEndpoint = "/api-events";
+
+MinimalApiFramework
+    .CreateDefault(options => options.UseSqlite("Data Source=test.sqlite"))
+    .Run();
+```
+
+There are multiple options classes available, each serving as a static configuration for
+various aspects of the framework.
+
+#### FrameworkOptions
+
+```csharp
+using System.Reflection;
+
+public static class FrameworkOptions
+{
+    public static Assembly? EntityClassesAssembly { get; set; } = null;
+    public static bool EnableRealtimeEvents { get; set; } = true;
+    public static bool MapIndexToApiDocs { get; set; } = true;
+    public static bool EnableApiDocs { get; set; } = true;
+    public static string? ApiPrefix { get; set; }
+    public static string PermissionHeader { get; set; } = "x-api-permission";
 }
 ```
 
-**SampleEmbeddedEntity Class**
+**Properties:**
+- `EntityClassesAssembly`: The assembly containing your entity classes. (default: `null`)
+- `EnableRealtimeEvents`: Enable or disable SignalR-based realtime events. (default: `true`)
+- `MapIndexToApiDocs`: Map the root index to API docs. (default: `true`)
+- `EnableApiDocs`: Enable or disable API documentation. (default: `true`)
+- `ApiPrefix`: Set a custom API route prefix. (default: `null`)
+- `PermissionHeader`: The HTTP header used for permission checks. (default: `"x-api-permission"`)
+
+### FrameworkDbContextOptions
 
 ```csharp
-public class SampleEmbeddedEntity : DbEntity<int>
+using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework.Core;
+
+public static class FrameworkDbContextOptions
 {
-    public string Property2 { get; set; }
+    public static Type? DbContextType { get; set; } = null;
+    public static ServiceLifetime DbContextLifetime { get; set; } = ServiceLifetime.Scoped;
+    public static ServiceLifetime DbContextOptionsLifetime { get; set; } = ServiceLifetime.Scoped;
+    public static Action<DbContextOptionsBuilder>? DbContextConfiguration { get; set; } = null;
+    public static DatabaseAction DatabaseAction { get; set; } = DatabaseAction.EnsureCreated;
 }
 ```
 
-You now have a fully working EntityFrameworkCore backed MinimalApi CRUD project.
+**Properties:**
+- `DbContextType`: Custom `DbContext` type to use. (default: `null`)
+- `DbContextLifetime`: Service lifetime for the DbContext. (default: `Scoped`)
+- `DbContextOptionsLifetime`: Service lifetime for DbContext options. (default: `Scoped`)
+- `DbContextConfiguration`: Action to further configure the `DbContextOptionsBuilder`. (default: `null`)
+- `DatabaseAction`: Database initialization action (`None`, `EnsureCreated`, `DeleteAndCreate`). (default: `EnsureCreated`)
 
-### Advanced Setup
+#### Using a custom DbContext
 
-#### Custom DbContext (Useful for migrations support)
+We can define a custom `DbContext` class that inherits from `BaseDbContext`. This can be configured using one of the properties in the `FrameworkDbContextOptions` class.
 
-To support database migrations, we can create a custom dbcontext class that inherits from `BaseDbContext`
+Sample Custom DbContext Class
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
@@ -146,35 +218,50 @@ public class CustomDbContext : BaseDbContext
 }
 ```
 
-### Database Initialization
-
-These are different database action types that can be defined in the `AddAllEntityServices` or `AddEntityServices`
-extensions using the `databaseAction` parameter:
-
-- None - Default Action
-- DatabaseAction.EnsureCreated - Run `Database.EnsureCreated()`
-- DatabaseAction.DeleteAndCreate - Run `Database.EnsureDeleted()` before `Database.EnsureCreated()`
-
-As an example:
+Configuration
 
 ```csharp
-builder.Services.AddDbContextService(assembly,
-    options => options.UseSqlite("Data Source=test.sqlite"),
-    databaseAction: DatabaseAction.DeleteAndCreate);
+FrameworkDbContextOptions.DbContextType = typeof(CustomDbContext);
+FrameworkDbContextOptions.DatabaseAction = DatabaseAction.EnsureCreated;
+FrameworkDbContextOptions.DbContextConfiguration = options =>
+{
+    options.UseSqlite("Data Source=test.sqlite");
+};
 ```
 
-This ensures that a fresh database is used in every run. If you only need
-to set the database once, `DatabaseAction.EnsureCreated` is the recommended option
-
-### Advanced Route Options
-
-You can modify the endpoint options using the `routeOptionsAction` parameter. For example, to require authorization for
-all endpoints:
+### FrameworkApiDocsOptions
 
 ```csharp
-app.MapGroup("api")
-    .MapAllEntityEndpoints<int>(assembly, routeOptions => routeOptions.RequireAuthorization());
+using Scalar.AspNetCore;
+
+public static class FrameworkApiDocsOptions
+{
+    public static bool EnableSidebar { get; set; } = false;
+    public static ScalarLayout Layout { get; set; } = ScalarLayout.Classic;
+    public static ScalarTheme Theme { get; set; } = ScalarTheme.Default;
+}
 ```
+
+**Properties:**
+- `EnableSidebar`: Show or hide the sidebar in API docs. (default: `false`)
+- `Layout`: API docs layout (`Classic`, etc.), options are `ScalarLayout.Modern` and `ScalarLayout.Classic`. (default: `ScalarLayout.Classic`)
+- `Theme`: API docs theme provided by scalar, options are available in the `ScalarTheme` enum. (default: `ScalarTheme.Default`).
+
+### FrameworkRealtimeOptions
+
+```csharp
+using Russkyc.MinimalApi.Framework.Core;
+
+public static class FrameworkRealtimeOptions
+{
+    public static string RealtimeEventsEndpoint { get; set; } = ConfigurationStrings.RealtimeHubEndpoint;
+}
+```
+
+**Properties:**
+- `RealtimeEventsEndpoint`: The SignalR endpoint for realtime events. (default: `/crud-events`)
+
+---
 
 ### Advanced Querying
 
@@ -401,6 +488,8 @@ Content-Type: application/json
 DELETE /api/sampleentity/batch?filter=@Count > 8
 ```
 
+---
+
 ### Data Annotations Validation
 Properties with data annotations such as `[Required]`, `[StringLength]`, and others will now be validated automatically
 when creating entities. If validation fails, a `400 Bad Request` response will be returned with the validation errors.
@@ -430,57 +519,126 @@ public class ValidationError
 > [!NOTE]
 > Data validation is implemented using [MiniValidation](https://github.com/DamianEdwards/MiniValidation). Fluent validation interfaces are not supported.
 
+---
+### Permissions Based Access Control
+
+The framework supports permission control at the entity level using the `[RequirePermission]` attribute. This allows you to restrict access to specific API methods (GET, POST, PUT, PATCH, DELETE) based on custom permissions.
+
+#### Usage
+
+To require permissions for certain API methods on an entity, decorate the entity class with the `[RequirePermission]` attribute. You can specify multiple permissions and apply the attribute multiple times for different methods.
+
+**Example:**
+```csharp
+using Russkyc.MinimalApi.Framework.Core.Access;
+using Russkyc.MinimalApi.Framework.Core.Attributes;
+
+[RequirePermission(ApiMethod.Post, "create_permission")]
+[RequirePermission(ApiMethod.Get, "read_permission")]
+public class SampleEntity : DbEntity<Guid>
+{
+    // ...properties...
+}
+```
+
+- `ApiMethod`: The HTTP method to restrict (e.g., `ApiMethod.Get`, `ApiMethod.Post`).
+- `permission`: One or more permission strings required to access the endpoint.
+
+#### How it works
+
+When a request is made to an endpoint with permission control, the framework checks for the required permission(s) in the HTTP header defined by `FrameworkOptions.PermissionHeader` (default: `x-api-permission`).
+
+If the required permission is not present in the header, the request will be rejected with a `403 Forbidden` response.
+
+**Example request:**
+```http
+GET /api/sampleentity
+x-api-permission: read_permission
+```
+
+You can customize the header name by setting:
+```csharp
+FrameworkOptions.PermissionHeader = "your-custom-header";
+```
+
+#### Multiple Permissions
+
+If multiple permissions are specified, the request must include at least one of the required permissions in the header value (comma-separated if multiple).
+
+**Example:**
+```csharp
+[RequirePermission(ApiMethod.Get, "perm1", "perm2")]
+```
+
+**Request:**
+```http
+GET /api/sampleentity
+x-api-permission: perm2
+```
+
+- Permission checks are only enforced for endpoints and methods decorated with `[RequirePermission]`.
+- If no `[RequirePermission]` attribute is present, the endpoint is accessible without permission checks.
+- You can apply multiple `[RequirePermission]` attributes to the same class for different methods.
+
+> [!WARNING]
+> Header-based permission control is a simple approach and should not be considered as secure as standard methods like JWT, Cookie, or Basic Authentication.
+> For public or production environments that require strong security, use .NET `Authentication`/`Authorization` with JWT or a custom authentication solution instead of static permission strings.
+---
+
 ### Realtime Support
 
-To enable realtime events support, add the `AddRealtimeService` method to your service collection and map the realtime hub using `MapRealtimeHub` in your `Program.cs` file:
+Realtime events are enabled by default and can be used to receive updates
+when entities are created, updated, or deleted and is implemented using SignalR.
+
+We can enable or disable realtime events in the server by setting the `EnableRealtimeEvents` property in the `FrameworkOptions` class.
 
 ```csharp
-using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using Russkyc.MinimalApi.Framework;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var assembly = Assembly.GetExecutingAssembly();
-
-// Add Entity Context Services
-builder.Services.AddDbContextService(assembly, options => options.UseInMemoryDatabase("sample"));
-
-// Add Realtime Service
-builder.Services.AddRealtimeService();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-// Map Entity CRUD Endpoints
-app.MapGroup("api")
-    .MapAllEntityEndpoints<int>(assembly);
-
-// Map Realtime Hub
-app.MapRealtimeHub();
-
-app.Run();
+FrameworkOptions.EnableRealtimeEvents = true; // or false to disable
 ```
-The default websocket endpoint is `/crud-events` but can be changed by
-adding a string parameter of the desired endpint in the `MapRealtimeHub`
-method, eg; `.MapRealtimeHub("/api-events")`.
+
+The default SignalR endpoint for realtime events is `/realtime-events`, but you can change it by setting the `RealtimeEventsEndpoint` property in the `FrameworkRealtimeOptions` class.
+
+```csharp
+FrameworkRealtimeOptions.RealtimeEventsEndpoint = "/api-events"; // Custom endpoint
+```
+
+#### Sample Realtime Client Code
+
+```csharp
+using System.Text.Json;
+using Microsoft.AspNetCore.SignalR.Client;
+using Russkyc.MinimalApi.Framework.Core;
+
+// ConfigurationStrings.RealtimeHubEndpoint provides the default SignalR endpoint for realtime events.
+var connection = new HubConnectionBuilder()
+    .WithUrl($"https://localhost:7102{ConfigurationStrings.RealtimeHubEndpoint}", options =>
+    {
+        // If you have enabled permission control in some endpoints, you need to set the required permission
+        // in order to receive realtime events for those endpoints.
+        options.Headers.Add(ConfigurationStrings.ApiPermissionHeader, "xcxs");
+    })
+    .WithAutomaticReconnect()
+    .Build();
+
+connection.On<RealtimeEvent>(ConfigurationStrings.RealtimeEvent, obj =>
+{
+    var serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions()
+    {
+        WriteIndented = true
+    });
+    Console.WriteLine(serialized);
+});
+
+await connection.StartAsync();
+Console.Read();
+```
 
 Each event returned is an `EntityEvent<T>` type, where T is the type of data
 returned by the resource event that triggered the websocket message. Eg; when
 creating a `SampleEntity` using `post` the `EntityEvent` being sent in realtime is of
 type `EntityEvent<SampleEntity>`.
 
-#### EntityEvent<T> Class
+#### EntityEvent Schema
 
 ```csharp
 public class EntityEvent<T>
@@ -490,14 +648,9 @@ public class EntityEvent<T>
     public T? Data { get; set; }
 }
 ```
-**Schema Information**
 
 - The `Resource` property will be the name of the entity in lowercase, eg; "sampleentity".
 - The `Type` property will be the type of event, eg; `created`, `updated`, `deleted`, `batch-created`, `batch-updated`, `batch-deleted`
 - The `Data` property contains the data being returned by that resource method.
 
-## This is not recommended if...
-
-- You need a custom api endpoints outside of basic CRUD operations.
-- There is complex business logic that needs to be done server side.
-- Features require lots of code changes that defeat the purpose of a simple CRUD api.
+---

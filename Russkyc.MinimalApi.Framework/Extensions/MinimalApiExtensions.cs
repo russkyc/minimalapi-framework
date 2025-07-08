@@ -8,11 +8,11 @@ using MiniValidation;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Core.Access;
 using Russkyc.MinimalApi.Framework.Core.Attributes;
-using Russkyc.MinimalApi.Framework.Server.Data;
-using Russkyc.MinimalApi.Framework.Server.Options;
-using Russkyc.MinimalApi.Framework.Server.Realtime;
+using Russkyc.MinimalApi.Framework.Data;
+using Russkyc.MinimalApi.Framework.Options;
+using Russkyc.MinimalApi.Framework.Realtime;
 
-namespace Russkyc.MinimalApi.Framework.Server.Extensions;
+namespace Russkyc.MinimalApi.Framework.Extensions;
 
 public static class MinimalApiExtensions
 {
@@ -155,7 +155,7 @@ public static class MinimalApiExtensions
             {
                 if (!HasPermission<TEntity>(httpContext, ApiMethod.Get))
                     return Results.Unauthorized();
-                
+
                 var dbSet = context.DbSet<TEntity>();
                 var entities = dbSet.AsNoTracking();
 
@@ -297,7 +297,7 @@ public static class MinimalApiExtensions
             {
                 if (!HasPermission<TEntity>(httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
-                
+
                 var dbSet = context.DbSet<TEntity>();
                 var entryEntity = dbSet.Update(entity);
                 await context.SaveChangesAsync();

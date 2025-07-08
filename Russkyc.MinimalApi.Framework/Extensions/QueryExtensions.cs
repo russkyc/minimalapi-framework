@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 
-namespace Russkyc.MinimalApi.Framework.Server.Extensions;
+namespace Russkyc.MinimalApi.Framework.Extensions;
 
 internal static class QueryExtensions
 {

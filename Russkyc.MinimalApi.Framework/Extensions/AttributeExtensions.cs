@@ -1,4 +1,4 @@
-﻿namespace Russkyc.MinimalApi.Framework.Server.Extensions;
+﻿namespace Russkyc.MinimalApi.Framework.Extensions;
 
 internal static class AttributeExtensions
 {

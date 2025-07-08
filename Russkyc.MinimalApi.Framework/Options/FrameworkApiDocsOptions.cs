@@ -1,6 +1,6 @@
 ﻿using Scalar.AspNetCore;
 
-namespace Russkyc.MinimalApi.Framework.Server.Options;
+namespace Russkyc.MinimalApi.Framework.Options;
 
 public static class FrameworkApiDocsOptions
 {

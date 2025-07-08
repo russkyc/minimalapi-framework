@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Russkyc.MinimalApi.Framework.Server.Options;
+using Russkyc.MinimalApi.Framework.Options;
 
-namespace Russkyc.MinimalApi.Framework.Server.Realtime;
+namespace Russkyc.MinimalApi.Framework.Realtime;
 
 internal class EventHub : Hub
 {

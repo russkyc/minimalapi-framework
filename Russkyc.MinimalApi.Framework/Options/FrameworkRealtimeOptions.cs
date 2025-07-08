@@ -1,6 +1,6 @@
 ﻿using Russkyc.MinimalApi.Framework.Core;
 
-namespace Russkyc.MinimalApi.Framework.Server.Options;
+namespace Russkyc.MinimalApi.Framework.Options;
 
 public static class FrameworkRealtimeOptions
 {

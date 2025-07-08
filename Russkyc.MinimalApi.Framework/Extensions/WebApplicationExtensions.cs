@@ -1,12 +1,12 @@
-﻿using Russkyc.MinimalApi.Framework.Server.Options;
+﻿using Russkyc.MinimalApi.Framework.Options;
 using Scalar.AspNetCore;
 
-namespace Russkyc.MinimalApi.Framework.Server.Extensions;
+namespace Russkyc.MinimalApi.Framework.Extensions;
 
 public static class WebApplicationExtensions
 {
     public static WebApplication UseMinimalApiFramework(
-        this WebApplication webApplication)
+        this WebApplication webApplication, bool mapEntityEndpoints = true)
     {
         if (FrameworkOptions.EnableApiDocs)
         {
@@ -19,19 +19,20 @@ public static class WebApplicationExtensions
             });
         }
 
-        if (FrameworkOptions.UseHttpsRedirection)
-        {
-            webApplication.UseHttpsRedirection();
-        }
-
         if (FrameworkOptions.ApiPrefix != null)
         {
-            webApplication.MapGroup(FrameworkOptions.ApiPrefix)
-                .MapAllEntityEndpoints(FrameworkOptions.EntityClassesAssembly);
+            var group = webApplication.MapGroup(FrameworkOptions.ApiPrefix);
+            if (mapEntityEndpoints)
+            {
+                group.MapAllEntityEndpoints(FrameworkOptions.EntityClassesAssembly);
+            }
         }
         else
         {
-            webApplication.MapAllEntityEndpoints();
+            if (mapEntityEndpoints)
+            {
+                webApplication.MapAllEntityEndpoints(FrameworkOptions.EntityClassesAssembly);
+            }
         }
 
         if (FrameworkOptions.EnableRealtimeEvents)
@@ -39,7 +40,7 @@ public static class WebApplicationExtensions
             webApplication.MapRealtimeHub(FrameworkRealtimeOptions.RealtimeEventsEndpoint);
         }
 
-        if (FrameworkOptions.AutoRedirectToApiDocs)
+        if (FrameworkOptions.MapIndexToApiDocs)
         {
             webApplication.MapGet("/", context =>
             {

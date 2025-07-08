@@ -2,11 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Russkyc.MinimalApi.Framework.Core;
-using Russkyc.MinimalApi.Framework.Server.Data;
-using Russkyc.MinimalApi.Framework.Server.Options;
-using Russkyc.MinimalApi.Framework.Server.Realtime;
+using Russkyc.MinimalApi.Framework.Data;
+using Russkyc.MinimalApi.Framework.Options;
+using Russkyc.MinimalApi.Framework.Realtime;
 
-namespace Russkyc.MinimalApi.Framework.Server.Extensions;
+namespace Russkyc.MinimalApi.Framework.Extensions;
 
 public static class ServiceCollectionExtensions
 {
