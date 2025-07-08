@@ -18,25 +18,47 @@ to create a quick backend for prototyping apps that use CRUD operations.
 
 <img src=".github/resources/images/scalar-api-docs.jpeg" style="width: 100%;" />
 
-> ### ✨ What's New:
-> v1.0.0
-> - Shorter setup code for new projects [learn more...](#getting-started)
-> - Support for permission control in endpoints [learn more...](#advanced-route-options)
-> v0.10.0
-> - Support for data annotations validation [learn more...](#data-annotations-validation)
-> 
-> v0.9.0
-> - Realtime support using SignalR [learn more...](#realtime-support)
-> - Advanced querying with filtering, ordering, and pagination [learn more...](#advanced-querying)
-> - Batch endpoints for adding, updating, and deleting multiple entities [learn more...](#batch-endpoints)
+---
 
-## Potential use-cases
+## 📓 Table of Contents
+
+1. [What's New](#whats-new)
+2. [Potential Use-Cases](#potential-use-cases)
+3. [Getting Started](#getting-started)
+   - [Installation](#installation)
+   - [Minimal Setup](#minimal-setup)
+   - [Standard Setup](#standard-setup)
+4. [Configuration](#configuration)
+   - [FrameworkOptions](#frameworkoptions)
+   - [FrameworkDbContextOptions](#frameworkdbcontextoptions)
+   - [FrameworkApiDocsOptions](#frameworkapidocsoptions)
+   - [FrameworkRealtimeOptions](#frameworkrealtimeoptions)
+5. [Advanced Features](#advanced-features)
+   - [Advanced Querying](#advanced-querying)
+   - [Batch Endpoints](#batch-endpoints)
+   - [Data Annotations Validation](#data-annotations-validation)
+   - [Permissions Based Access Control](#permissions-based-access-control)
+   - [Realtime Support](#realtime-support)
+6. [Special Thanks](#special-thanks)
+
+---
+
+## ✨ What's New (v1.0.0):
+- Scalar API Docs integration
+- Shorter setup code for new projects [learn more...](#getting-started)
+- Support for permission control in endpoints [learn more...](#permissions-based-access-control)
+
+---
+
+## ❔ Potential Use-Cases
 
 - Quick API prototyping
 - Small projects that only require CRUD functionality
 - Frontend Testing (if a backend API is needed)
 
-## Getting Started
+---
+
+## 🎉 Getting Started
 
 ### Installation
 
@@ -116,36 +138,12 @@ await webApplication.RunAsync();
 
 ---
 
-### Configuration
+## 🔧 Configuration
 
 The framework provides several static options classes to customize its behavior.
 You can set these options before your application startup in your `Program.cs`.
 
-#### Example Configuration
-
-```csharp
-using Microsoft.EntityFrameworkCore;
-using Russkyc.MinimalApi.Framework.Options;
-
-// Required
-// This is needed to set up the database provider for entity framework core.
-FrameworkDbContextOptions.DbContextConfiguration = options => options.UseSqlite("Data Source=test.sqlite");
-
-// Optional
-FrameworkOptions.EnableApiDocs = true;
-FrameworkApiDocsOptions.EnableSidebar = true;
-FrameworkDbContextOptions.DatabaseAction = DatabaseAction.EnsureCreated;
-FrameworkRealtimeOptions.RealtimeEventsEndpoint = "/api-events";
-
-MinimalApiFramework
-    .CreateDefault(options => options.UseSqlite("Data Source=test.sqlite"))
-    .Run();
-```
-
-There are multiple options classes available, each serving as a static configuration for
-various aspects of the framework.
-
-#### FrameworkOptions
+### FrameworkOptions
 
 ```csharp
 using System.Reflection;
@@ -262,6 +260,8 @@ public static class FrameworkRealtimeOptions
 - `RealtimeEventsEndpoint`: The SignalR endpoint for realtime events. (default: `/crud-events`)
 
 ---
+
+## ⚡ Advanced Features
 
 ### Advanced Querying
 
@@ -520,6 +520,7 @@ public class ValidationError
 > Data validation is implemented using [MiniValidation](https://github.com/DamianEdwards/MiniValidation). Fluent validation interfaces are not supported.
 
 ---
+
 ### Permissions Based Access Control
 
 The framework supports permission control at the entity level using the `[RequirePermission]` attribute. This allows you to restrict access to specific API methods (GET, POST, PUT, PATCH, DELETE) based on custom permissions.
@@ -654,3 +655,26 @@ public class EntityEvent<T>
 - The `Data` property contains the data being returned by that resource method.
 
 ---
+
+## 💝 Donate and Support Development
+
+This is free and available for everyone to use, but still requires time for development
+and maintenance. By choosing to donate, you are not only helping develop this project,
+but you are also helping me dedicate more time for creating more tools that help the community :heart:
+
+## 💎 Special Thanks
+
+This project may exists with the help of these amazing open-source projects:
+
+- [Scalar](https://github.com/scalar/scalar) - Used as the API documentation.
+- [System.Linq.Dynamic.Core](https://github.com/zzzprojects/System.Linq.Dynamic.Core) - Used as the expression parser in advanced querying.
+- [MiniValidation](https://github.com/DamianEdwards/MiniValidation) - Used for data annotations validation.
+- [Entity Framework Core](https://github.com/dotnet/efcore) - For Database Access.
+- [SignalR](https://github.com/SignalR/SignalR) - For the realtime events.
+
+This project is made easier to develop by Jetbrains! They have provided
+Licenses to their IDE's to support development of this open-source project.
+
+<a href="https://www.jetbrains.com/community/opensource/#support">
+<img width="100px" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo.">
+</a>
