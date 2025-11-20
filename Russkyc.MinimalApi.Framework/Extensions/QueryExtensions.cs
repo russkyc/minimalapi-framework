@@ -25,7 +25,7 @@ internal static class QueryExtensions
         
         foreach (var includeProperty in includeProperties)
         {
-            if (!Permissions.HasPermissionForGraph<T>(httpContext, ApiMethod.Get))
+            if (!EntityAccess.HasPermissionForGraph<T>(httpContext, ApiMethod.Get))
             {
                 continue;
             }

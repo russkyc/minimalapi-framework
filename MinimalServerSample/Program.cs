@@ -25,11 +25,11 @@ var app = MinimalApiFramework
 app.MapPost("/login", (LoginRequest request) =>
 {
     // Simple hardcoded validation for demo
-    if (request is not { Username: "admin", Password: "admin" }) return Results.Unauthorized();
+    if (request is not ({ Username: "admin", Password: "admin" } or { Username: "user", Password: "user" })) return Results.Unauthorized();
     var claims = new[]
     {
         new Claim(ClaimTypes.Name, request.Username),
-        new Claim(ClaimTypes.Role, "Admin")
+        new Claim(ClaimTypes.Role, request.Username.Equals("admin") ? "Admin" : "User")
     };
 
     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(FrameworkOptions.JwtKey!));
@@ -43,18 +43,18 @@ app.MapPost("/login", (LoginRequest request) =>
         signingCredentials: credentials);
 
     return Results.Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
-
 });
 
 app.MapPost("/login-cookie", async (LoginRequest request, HttpContext context) =>
 {
     // Simple hardcoded validation for demo
-    if (request is not { Username: "admin", Password: "admin" }) return Results.Unauthorized();
+    if (request is not ({ Username: "admin", Password: "admin" } or { Username: "user", Password: "user" })) return Results.Unauthorized();
     var claims = new[]
     {
         new Claim(ClaimTypes.Name, request.Username),
-        new Claim(ClaimTypes.Role, "Admin")
+        new Claim(ClaimTypes.Role, request.Username.Equals("admin") ? "Admin" : "User")
     };
+    
     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
     var principal = new ClaimsPrincipal(identity);
     await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
@@ -69,10 +69,16 @@ app.MapPost("/logout", async (HttpContext context) =>
 
 app.Run();
 
-public record LoginRequest(string Username, string Password);
+public class LoginRequest
+{
+    public required string Username { get; set; }
+    public required string Password { get; set; }
+}
 
-[RequirePermission(ApiMethod.Post,"xcx","Admin")]
-[RequirePermission(ApiMethod.Get, "xcv","Admin")]
+[RequirePermission(ApiMethod.Post, "xcx")]
+[RequirePermission(ApiMethod.Get, "xcv")]
+[RequireRoles(ApiMethod.Post, "Admin")]
+[RequireRoles(ApiMethod.Get, "Admin", "User")]
 public class SampleEmbeddedEntity : DbEntity<int>
 {
     public required string Property2 { get; set; }
@@ -80,7 +86,6 @@ public class SampleEmbeddedEntity : DbEntity<int>
 
 public class SampleEntity : DbEntity<Guid>
 {
-    [Required, MinLength(5)]
-    public required string Property { get; set; }
+    [Required, MinLength(5)] public required string Property { get; set; }
     public virtual SampleEmbeddedEntity? EmbeddedEntity { get; set; }
 }

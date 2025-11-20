@@ -139,7 +139,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Get))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Get))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -201,7 +201,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Get))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Get))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -235,7 +235,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
+                if (!EntityAccess.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
                     return Results.Unauthorized();
                 var dbSet = context.DbSet<TEntity>();
 
@@ -281,7 +281,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Patch))
+                if (!EntityAccess.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -312,7 +312,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Delete))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Delete))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -349,7 +349,7 @@ public static class MinimalApiExtensions
             {
                 foreach (var entity in entities)
                 {
-                    if (!Permissions.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
+                    if (!EntityAccess.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
                         return Results.Unauthorized();
 
                     if (!TryValidateEntity(entity, out var errors))
@@ -403,7 +403,7 @@ public static class MinimalApiExtensions
             {
                 foreach (var e in entities)
                 {
-                    if (!Permissions.HasPermissionForEntityGraph(e, httpContext, ApiMethod.Put))
+                    if (!EntityAccess.HasPermissionForEntityGraph(e, httpContext, ApiMethod.Put))
                         return Results.Unauthorized();
                 }
 
@@ -435,7 +435,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermissionForGraph<TEntity>(httpContext, ApiMethod.Patch))
+                if (!EntityAccess.HasPermissionForGraph<TEntity>(httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -507,7 +507,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Delete))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Delete))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();

@@ -39,10 +39,9 @@ to create a quick backend for prototyping apps that use CRUD operations.
    - [Realtime Support](#realtime-support)
 6. [Special Thanks](#special-thanks)
 
-## ✨ What's New (v1.0.0):
-- Scalar API Docs integration
-- Shorter setup code for new projects [learn more...](#getting-started)
-- Support for permission control in endpoints [learn more...](#permissions-based-access-control)
+## ✨ What's New (v1.1.0):
+- Nested entity permissions checking
+- Roles based permissions with JWT and Cookie authentication support
 
 ## ❔ Potential Use-Cases
 
@@ -61,7 +60,7 @@ Follow these steps to set up the `Russkyc.MinimalApi.Framework` in your project.
 1. **Create a new ASP.NET Core Web API project** if you don't already have one.
 2. **Install the `Russkyc.MinimalApi.Framework` NuGet package** using the cli or the nuget package manager
 3. **Install an EntityFramework Provider** like `Microsoft.EntityFrameworkCore.InMemory` or `Microsoft.EntityFrameworkCore.Sqlite` depending on your database choice.
-2. **Add the required services, configuration, and mappings** in the `Program.cs` file:
+4. **Add the required services, configuration, and mappings** in the `Program.cs` file:
 
 There are two options for setting up the framework in your project, a minimal setup and a more granular standard setup.
 
@@ -150,6 +149,12 @@ public static class FrameworkOptions
     public static bool EnableApiDocs { get; set; } = true;
     public static string? ApiPrefix { get; set; }
     public static string PermissionHeader { get; set; } = "x-api-permission";
+    public static bool EnableRoleBasedPermissions { get; set; } = false;
+    public static bool EnableJwtAuthentication { get; set; } = false;
+    public static string? JwtIssuer { get; set; }
+    public static string? JwtAudience { get; set; }
+    public static string? JwtKey { get; set; }
+    public static bool EnableCookieAuthentication { get; set; } = false;
 }
 ```
 
@@ -160,6 +165,12 @@ public static class FrameworkOptions
 - `EnableApiDocs`: Enable or disable API documentation. (default: `true`)
 - `ApiPrefix`: Set a custom API route prefix. (default: `null`)
 - `PermissionHeader`: The HTTP header used for permission checks. (default: `"x-api-permission"`)
+- `EnableRoleBasedPermissions`: Enable role-based permissions using authenticated user roles. (default: `false`)
+- `EnableJwtAuthentication`: Enable JWT bearer authentication. (default: `false`)
+- `JwtIssuer`: The issuer for JWT validation. (default: `null`)
+- `JwtAudience`: The audience for JWT validation. (default: `null`)
+- `JwtKey`: The key for JWT signing and validation. (default: `null`)
+- `EnableCookieAuthentication`: Enable cookie authentication. (default: `false`)
 
 ### FrameworkDbContextOptions
 
@@ -511,7 +522,25 @@ public class ValidationError
 
 ### Permissions Based Access Control
 
-The framework supports permission control at the entity level using the `[RequirePermission]` attribute. This allows you to restrict access to specific API methods (GET, POST, PUT, PATCH, DELETE) based on custom permissions.
+The framework supports permission control at the entity level using the `[RequirePermission]` attribute. This allows you to restrict access to specific API methods (GET, POST, PUT, PATCH, DELETE) based on custom permissions or user roles.
+
+#### Authentication Setup
+
+To use role-based permissions or JWT/cookie authentication, configure the following options:
+
+```csharp
+FrameworkOptions.EnableJwtAuthentication = true;
+FrameworkOptions.EnableCookieAuthentication = true;
+FrameworkOptions.EnableRoleBasedPermissions = true;
+FrameworkOptions.JwtIssuer = "your-issuer";
+FrameworkOptions.JwtAudience = "your-audience";
+FrameworkOptions.JwtKey = "your-secret-key";
+```
+
+- `EnableJwtAuthentication`: Enables JWT bearer authentication.
+- `EnableCookieAuthentication`: Enables cookie authentication.
+- `EnableRoleBasedPermissions`: Enables checking user roles against required permissions.
+- `JwtIssuer`, `JwtAudience`, `JwtKey`: Required for JWT validation.
 
 #### Usage
 
@@ -520,7 +549,6 @@ To require permissions for certain API methods on an entity, decorate the entity
 **Example:**
 ```csharp
 using Russkyc.MinimalApi.Framework.Core.Access;
-using Russkyc.MinimalApi.Framework.Core.Attributes;
 
 [RequirePermission(ApiMethod.Post, "create_permission")]
 [RequirePermission(ApiMethod.Get, "read_permission")]
@@ -530,14 +558,30 @@ public class SampleEntity : DbEntity<Guid>
 }
 ```
 
+To require roles, use the `[RequireRoles]` attribute separately.
+
+**Example:**
+```csharp
+[RequireRoles(ApiMethod.Get, "Admin", "User")]
+public class SampleEntity : DbEntity<Guid>
+{
+    // ...properties...
+}
+```
+
 - `ApiMethod`: The HTTP method to restrict (e.g., `ApiMethod.Get`, `ApiMethod.Post`).
 - `permission`: One or more permission strings required to access the endpoint.
+- `roles`: One or more role names required to access the endpoint.
 
-#### How it works
+#### Permission Sources
 
-When a request is made to an endpoint with permission control, the framework checks for the required permission(s) in the HTTP header defined by `FrameworkOptions.PermissionHeader` (default: `x-api-permission`).
+Permissions are checked from multiple sources in order of priority:
 
-If the required permission is not present in the header, the request will be rejected with a `403 Forbidden` response.
+1. **HTTP Header**: Custom permissions sent in the header defined by `FrameworkOptions.PermissionHeader` (default: `x-api-permission`).
+2. **JWT Claims**: Permissions from `permissions` or `permission` claims in the JWT token.
+3. **User Roles**: If role-based permissions are enabled, user roles from authentication (in cookies or in the JWT token) are checked.
+
+#### Header-Based Permissions
 
 **Example request:**
 ```http
@@ -550,118 +594,50 @@ You can customize the header name by setting:
 FrameworkOptions.PermissionHeader = "your-custom-header";
 ```
 
+#### JWT and Cookie Authentication
+
+When JWT or cookie authentication is enabled, permissions can also be extracted from the authenticated user's claims.
+
+For JWT, include permissions in the token claims:
+```csharp
+new Claim("permissions", "read_permission,write_permission")
+```
+
+For cookies, permissions are stored in the authentication cookie.
+
+#### Role-Based Permissions
+
+If `EnableRoleBasedPermissions` is true, user roles are checked against the required permissions in `[RequirePermission]`.
+
+**Example:**
+```csharp
+[RequirePermission(ApiMethod.Get, "Admin")]
+```
+
+If the authenticated user has the "Admin" role, access is granted.
+
+For direct role requirements, use `[RequireRoles]`:
+
+**Example:**
+```csharp
+[RequireRoles(ApiMethod.Get, "Admin")]
+```
+
+#### Nested Entity Permissions
+
+Permissions are also checked for nested entities. If an entity has related entities with permission requirements, those are validated as well.
+
 #### Multiple Permissions
 
-If multiple permissions are specified, the request must include at least one of the required permissions in the header value (comma-separated if multiple).
+If multiple permissions are specified, the request must include at least one matching permission from any source.
 
 **Example:**
 ```csharp
 [RequirePermission(ApiMethod.Get, "perm1", "perm2")]
 ```
 
-**Request:**
-```http
-GET /api/sampleentity
-x-api-permission: perm2
-```
+- Permission checks are only enforced for endpoints and methods decorated with `[RequirePermission]` or `[RequireRoles]`.
+- If no such attributes are present, the endpoint is accessible without permission checks.
+- You can apply multiple attributes to the same class for different methods.
+````
 
-- Permission checks are only enforced for endpoints and methods decorated with `[RequirePermission]`.
-- If no `[RequirePermission]` attribute is present, the endpoint is accessible without permission checks.
-- You can apply multiple `[RequirePermission]` attributes to the same class for different methods.
-
-> [!WARNING]
-> Header-based permission control is a simple approach and should not be considered as secure as standard methods like JWT, Cookie, or Basic Authentication.
-> For public or production environments that require strong security, use .NET `Authentication`/`Authorization` with JWT or a custom authentication solution instead of static permission strings.
-
-### Realtime Support
-
-Realtime events are enabled by default and can be used to receive updates
-when entities are created, updated, or deleted and is implemented using SignalR.
-
-We can enable or disable realtime events in the server by setting the `EnableRealtimeEvents` property in the `FrameworkOptions` class.
-
-```csharp
-FrameworkOptions.EnableRealtimeEvents = true; // or false to disable
-```
-
-The default SignalR endpoint for realtime events is `/realtime-events`, but you can change it by setting the `RealtimeEventsEndpoint` property in the `FrameworkRealtimeOptions` class.
-
-```csharp
-FrameworkRealtimeOptions.RealtimeEventsEndpoint = "/api-events"; // Custom endpoint
-```
-
-#### Sample Realtime Client Code
-
-```csharp
-using System.Text.Json;
-using Microsoft.AspNetCore.SignalR.Client;
-using Russkyc.MinimalApi.Framework.Core;
-
-// ConfigurationStrings.RealtimeHubEndpoint provides the default SignalR endpoint for realtime events.
-var connection = new HubConnectionBuilder()
-    .WithUrl($"https://localhost:7102{ConfigurationStrings.RealtimeHubEndpoint}", options =>
-    {
-        // If you have enabled permission control in some endpoints, you need to set the required permission
-        // in order to receive realtime events for those endpoints.
-        options.Headers.Add(ConfigurationStrings.ApiPermissionHeader, "xcxs");
-    })
-    .WithAutomaticReconnect()
-    .Build();
-
-connection.On<RealtimeEvent>(ConfigurationStrings.RealtimeEvent, obj =>
-{
-    var serialized = JsonSerializer.Serialize(obj, new JsonSerializerOptions()
-    {
-        WriteIndented = true
-    });
-    Console.WriteLine(serialized);
-});
-
-await connection.StartAsync();
-Console.Read();
-```
-
-See the [Minimal Client Sample Project](https://github.com/russkyc/minimalapi-framework/tree/master/MinimalClientSample) for the complete code.
-
-Each event returned is an `EntityEvent<T>` type, where T is the type of data
-returned by the resource event that triggered the websocket message. Eg; when
-creating a `SampleEntity` using `post` the `EntityEvent` being sent in realtime is of
-type `EntityEvent<SampleEntity>`.
-
-#### EntityEvent Schema
-
-```csharp
-public class EntityEvent<T>
-{
-    public string Resource { get; set; }
-    public string Type { get; set; }
-    public T? Data { get; set; }
-}
-```
-
-- The `Resource` property will be the name of the entity in lowercase, eg; "sampleentity".
-- The `Type` property will be the type of event, eg; `created`, `updated`, `deleted`, `batch-created`, `batch-updated`, `batch-deleted`
-- The `Data` property contains the data being returned by that resource method.
-
-## 💝 Donate and Support Development
-
-This is free and available for everyone to use, but still requires time for development
-and maintenance. By choosing to donate, you are not only helping develop this project,
-but you are also helping me dedicate more time for creating more tools that help the community :heart:
-
-## 💎 Special Thanks
-
-This project may exists with the help of these amazing open-source projects:
-
-- [Scalar](https://github.com/scalar/scalar) - Used as the API documentation.
-- [System.Linq.Dynamic.Core](https://github.com/zzzprojects/System.Linq.Dynamic.Core) - Used as the expression parser in advanced querying.
-- [MiniValidation](https://github.com/DamianEdwards/MiniValidation) - Used for data annotations validation.
-- [Entity Framework Core](https://github.com/dotnet/efcore) - For Database Access.
-- [SignalR](https://github.com/SignalR/SignalR) - For the realtime events.
-
-This project is made easier to develop by Jetbrains! They have provided
-Licenses to their IDE's to support development of this open-source project.
-
-<a href="https://www.jetbrains.com/community/opensource/#support">
-<img width="100px" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo.">
-</a>

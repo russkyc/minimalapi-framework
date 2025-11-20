@@ -11,7 +11,7 @@ using Russkyc.MinimalApi.Framework.Options;
 
 namespace Russkyc.MinimalApi.Framework.Utils;
 
-internal static class Permissions
+internal static class EntityAccess
 {
     internal static bool HasPermission<TEntity>(HttpContext httpContext, ApiMethod method)
     {
@@ -89,6 +89,27 @@ internal static class Permissions
         {
             var userRoles = user.FindAll(ClaimTypes.Role).Select(c => c.Value);
             hasPermission = userRoles.Any(role => attributePermissions.Any(ap => string.Equals(role, ap, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // Check roles separately
+        var rolesAttributes = entityType.GetAttributeValue<RequireRoles>();
+        if (rolesAttributes.Any() && rolesAttributes.Select(attribute => attribute.Method).Contains(method))
+        {
+            var requiredRoles = rolesAttributes
+                .Where(attribute => attribute.Method == method)
+                .SelectMany(attribute => attribute.Roles)
+                .Select(r => r.Trim())
+                .Where(r => !string.IsNullOrEmpty(r))
+                .ToArray();
+
+            if (requiredRoles.Any() && user.Identity?.IsAuthenticated == true)
+            {
+                var userRoles = user.FindAll(ClaimTypes.Role).Select(c => c.Value);
+                if (userRoles.Any(role => requiredRoles.Any(rr => string.Equals(role, rr, StringComparison.OrdinalIgnoreCase))))
+                {
+                    hasPermission = true;
+                }
+            }
         }
 
         return hasPermission;
