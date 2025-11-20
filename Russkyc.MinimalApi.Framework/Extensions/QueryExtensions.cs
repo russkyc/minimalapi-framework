@@ -2,12 +2,14 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Russkyc.MinimalApi.Framework.Core.Access;
+using Russkyc.MinimalApi.Framework.Utils;
 
 namespace Russkyc.MinimalApi.Framework.Extensions;
 
 internal static class QueryExtensions
 {
-    internal static IQueryable<T> ApplyIncludes<T>(this IQueryable<T> query, string? includes) where T : class
+    internal static IQueryable<T> ApplyIncludes<T>(this IQueryable<T> query, HttpContext httpContext, string? includes) where T : class
     {
         if (string.IsNullOrEmpty(includes))
         {
@@ -23,15 +25,24 @@ internal static class QueryExtensions
 
         foreach (var includeProperty in includeProperties)
         {
-            if (properties.TryGetValue(includeProperty, out var actualPropertyName))
+            if (!Permissions.HasPermission<T>(httpContext, ApiMethod.Get))
             {
-                var navigationProperty = entityType.GetProperty(actualPropertyName,
-                    BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                if (navigationProperty != null)
-                {
-                    query = query.Include(navigationProperty.Name);
-                }
+                continue;
             }
+
+            if (!properties.TryGetValue(includeProperty, out var includePropertyName))
+            {
+                continue;
+            }
+
+            var navigationProperty = entityType.GetProperty(includePropertyName,
+                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            if (navigationProperty is null)
+            {
+                continue;
+            }
+
+            query = query.Include(navigationProperty.Name);
         }
 
         return query;
@@ -42,7 +53,6 @@ internal static class QueryExtensions
         var parameter = Expression.Parameter(typeof(T), "entity");
         var expression = DynamicExpressionParser.ParseLambda([parameter], typeof(bool), filter);
         query = query.Where(expression);
-
         return query;
     }
 

@@ -1,6 +1,11 @@
 # User-specific stuff
 .[Ii]dea/**/**/*
+*.user
+
+# Local db related files
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 
 # Build results
 [Dd]ebug/
