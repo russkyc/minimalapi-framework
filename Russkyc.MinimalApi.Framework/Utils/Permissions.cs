@@ -1,6 +1,9 @@
 ﻿using System.Collections;
+using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
 using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Core.Access;
 using Russkyc.MinimalApi.Framework.Extensions;
@@ -28,6 +31,35 @@ internal static class Permissions
             .Where(p => !string.IsNullOrEmpty(p))
             .ToArray();
 
+        var user = httpContext.User;
+        if (user.Identity?.IsAuthenticated != true && FrameworkOptions.EnableJwtAuthentication)
+        {
+            var authHeader = httpContext.Request.Headers.Authorization.FirstOrDefault();
+            if (authHeader?.StartsWith("Bearer ") == true)
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var handler = new JwtSecurityTokenHandler();
+                try
+                {
+                    var validationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = FrameworkOptions.JwtIssuer,
+                        ValidAudience = FrameworkOptions.JwtAudience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(FrameworkOptions.JwtKey ?? throw new InvalidOperationException("JwtKey must be set when EnableJwtAuthentication is true")))
+                    };
+                    user = handler.ValidateToken(token, validationParameters, out _);
+                }
+                catch
+                {
+                    // invalid token, remain unauthenticated
+                }
+            }
+        }
+
         // collect permissions from header
         var permissionsSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var headerPermissions = httpContext.Request.Headers
@@ -37,13 +69,13 @@ internal static class Permissions
         foreach (var p in headerPermissions) permissionsSet.Add(p);
 
         // also collect permissions from authenticated user's claims (common claim names: "permissions", "permission")
-        if (httpContext.User.Identity?.IsAuthenticated == true)
+        if (user.Identity?.IsAuthenticated == true)
         {
             IEnumerable<string> claimPermissions = Enumerable.Empty<string>();
 
             claimPermissions = claimPermissions
-                .Concat(httpContext.User.FindAll("permissions").SelectMany(claim => claim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries)))
-                .Concat(httpContext.User.FindAll("permission").SelectMany(claim => claim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries)));
+                .Concat(user.FindAll("permissions").SelectMany(claim => claim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries)))
+                .Concat(user.FindAll("permission").SelectMany(claim => claim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries)));
 
             foreach (var cp in claimPermissions.Select(c => c.Trim()).Where(c => !string.IsNullOrEmpty(c)))
             {
@@ -53,9 +85,9 @@ internal static class Permissions
 
         var hasPermission = permissionsSet.Any(permission => attributePermissions.Any(ap => string.Equals(permission, ap, StringComparison.OrdinalIgnoreCase)));
 
-        if (!hasPermission && FrameworkOptions.EnableRoleBasedPermissions && httpContext.User.Identity?.IsAuthenticated == true)
+        if (!hasPermission && FrameworkOptions.EnableRoleBasedPermissions && user.Identity?.IsAuthenticated == true)
         {
-            var userRoles = httpContext.User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+            var userRoles = user.FindAll(ClaimTypes.Role).Select(c => c.Value);
             hasPermission = userRoles.Any(role => attributePermissions.Any(ap => string.Equals(role, ap, StringComparison.OrdinalIgnoreCase)));
         }
 
