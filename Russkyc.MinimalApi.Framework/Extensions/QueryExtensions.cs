@@ -22,10 +22,10 @@ internal static class QueryExtensions
         var entityType = typeof(T);
         var properties = entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .ToDictionary(p => p.Name.ToLower(), p => p.Name);
-
+        
         foreach (var includeProperty in includeProperties)
         {
-            if (!Permissions.HasPermission<T>(httpContext, ApiMethod.Get))
+            if (!Permissions.HasPermissionForGraph<T>(httpContext, ApiMethod.Get))
             {
                 continue;
             }

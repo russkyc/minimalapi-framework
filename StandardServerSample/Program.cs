@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Core.Access;
-using Russkyc.MinimalApi.Framework.Core.Attributes;
 using Russkyc.MinimalApi.Framework.Extensions;
 using Russkyc.MinimalApi.Framework.Options;
 

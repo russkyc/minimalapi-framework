@@ -1,6 +1,4 @@
-﻿using Russkyc.MinimalApi.Framework.Core.Access;
-
-namespace Russkyc.MinimalApi.Framework.Core.Attributes;
+﻿namespace Russkyc.MinimalApi.Framework.Core.Access;
 
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public class RequirePermission(ApiMethod method,params string[] permission) : Attribute

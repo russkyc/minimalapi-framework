@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using MiniValidation;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Core.Access;
-using Russkyc.MinimalApi.Framework.Core.Attributes;
 using Russkyc.MinimalApi.Framework.Data;
 using Russkyc.MinimalApi.Framework.Realtime;
 using Russkyc.MinimalApi.Framework.Utils;
@@ -236,7 +235,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Post))
+                if (!Permissions.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
                     return Results.Unauthorized();
                 var dbSet = context.DbSet<TEntity>();
 
@@ -282,7 +281,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Patch))
+                if (!Permissions.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -348,11 +347,11 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Post))
-                    return Results.Unauthorized();
-
                 foreach (var entity in entities)
                 {
+                    if (!Permissions.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
+                        return Results.Unauthorized();
+
                     if (!TryValidateEntity(entity, out var errors))
                     {
                         var validationError = new ValidationError
@@ -402,8 +401,11 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Put))
-                    return Results.Unauthorized();
+                foreach (var e in entities)
+                {
+                    if (!Permissions.HasPermissionForEntityGraph(e, httpContext, ApiMethod.Put))
+                        return Results.Unauthorized();
+                }
 
                 var dbSet = context.DbSet<TEntity>();
                 dbSet.UpdateRange(entities);
@@ -433,7 +435,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!Permissions.HasPermission<TEntity>(httpContext, ApiMethod.Patch))
+                if (!Permissions.HasPermissionForGraph<TEntity>(httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
