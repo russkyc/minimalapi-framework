@@ -7,10 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using MiniValidation;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Core.Access;
-using Russkyc.MinimalApi.Framework.Core.Attributes;
 using Russkyc.MinimalApi.Framework.Data;
-using Russkyc.MinimalApi.Framework.Options;
 using Russkyc.MinimalApi.Framework.Realtime;
+using Russkyc.MinimalApi.Framework.Utils;
 
 namespace Russkyc.MinimalApi.Framework.Extensions;
 
@@ -86,19 +85,6 @@ public static class MinimalApiExtensions
         routeOptionsAction?.Invoke(deleteEntitiesEndpoint);
     }
 
-    private static bool HasPermission<TEntity>(HttpContext httpContext, ApiMethod method)
-    {
-        var permissionsAttributes = typeof(TEntity).GetAttributeValue<RequirePermission>();
-        if (!permissionsAttributes.Any()) return true;
-        var methods = permissionsAttributes.Select(attribute => attribute.Method);
-        if (!methods.Contains(method)) return true;
-        var attributePermissions = permissionsAttributes
-            .Where(attribute => attribute.Method == method)
-            .SelectMany(attribute => attribute.Permission);
-        var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
-        return permissions.Any(permission => attributePermissions.Any(permission.Equals));
-    }
-
     private static async Task BroadcastCrudEvent<TEntity>(
         IHubContext<EventHub>? eventHub,
         RealtimeClientStore? realtimeClientStore,
@@ -153,14 +139,14 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Get))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Get))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
                 var entities = dbSet.AsNoTracking();
 
                 if (!string.IsNullOrEmpty(include))
-                    entities = entities.ApplyIncludes(include);
+                    entities = entities.ApplyIncludes(httpContext, include);
 
                 if (!string.IsNullOrEmpty(filter))
                     entities = entities.ApplyFilter(filter);
@@ -215,13 +201,13 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Get))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Get))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
                 var query = dbSet
                     .AsNoTracking()
-                    .ApplyIncludes(include)
+                    .ApplyIncludes(httpContext, include)
                     .SelectProperties(property);
                 var entity =
                     await query.FirstOrDefaultAsync(entity => ((IDbEntity<TKeyType>)entity).Id!.Equals(id));
@@ -249,7 +235,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Post))
+                if (!EntityAccess.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
                     return Results.Unauthorized();
                 var dbSet = context.DbSet<TEntity>();
 
@@ -295,7 +281,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Patch))
+                if (!EntityAccess.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -326,7 +312,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Delete))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Delete))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -361,11 +347,11 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Post))
-                    return Results.Unauthorized();
-
                 foreach (var entity in entities)
                 {
+                    if (!EntityAccess.HasPermissionForEntityGraph(entity, httpContext, ApiMethod.Post))
+                        return Results.Unauthorized();
+
                     if (!TryValidateEntity(entity, out var errors))
                     {
                         var validationError = new ValidationError
@@ -415,8 +401,11 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Put))
-                    return Results.Unauthorized();
+                foreach (var e in entities)
+                {
+                    if (!EntityAccess.HasPermissionForEntityGraph(e, httpContext, ApiMethod.Put))
+                        return Results.Unauthorized();
+                }
 
                 var dbSet = context.DbSet<TEntity>();
                 dbSet.UpdateRange(entities);
@@ -446,7 +435,7 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Patch))
+                if (!EntityAccess.HasPermissionForGraph<TEntity>(httpContext, ApiMethod.Patch))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
@@ -518,13 +507,13 @@ public static class MinimalApiExtensions
         {
             try
             {
-                if (!HasPermission<TEntity>(httpContext, ApiMethod.Delete))
+                if (!EntityAccess.HasPermission<TEntity>(httpContext, ApiMethod.Delete))
                     return Results.Unauthorized();
 
                 var dbSet = context.DbSet<TEntity>();
                 var entities = dbSet
                     .AsNoTracking()
-                    .ApplyIncludes(include);
+                    .ApplyIncludes(httpContext, include);
 
                 if (!string.IsNullOrWhiteSpace(filter))
                 {

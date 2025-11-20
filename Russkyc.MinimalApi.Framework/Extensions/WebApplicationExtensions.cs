@@ -8,6 +8,12 @@ public static class WebApplicationExtensions
     public static WebApplication UseMinimalApiFramework(
         this WebApplication webApplication, bool mapEntityEndpoints = true)
     {
+        if (FrameworkOptions.EnableJwtAuthentication || FrameworkOptions.EnableCookieAuthentication)
+        {
+            webApplication.UseAuthentication();
+            webApplication.UseAuthorization();
+        }
+
         if (FrameworkOptions.EnableApiDocs)
         {
             webApplication.UseSwagger(options => { options.RouteTemplate = "/openapi/{documentName}.json"; });
