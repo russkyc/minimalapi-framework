@@ -1,10 +1,14 @@
 ﻿using System.Reflection;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Data;
 using Russkyc.MinimalApi.Framework.Options;
 using Russkyc.MinimalApi.Framework.Realtime;
+using System.Text;
 
 namespace Russkyc.MinimalApi.Framework.Extensions;
 
@@ -53,12 +57,48 @@ public static class ServiceCollectionExtensions
                     Type = SecuritySchemeType.ApiKey,
                     BearerFormat = "vxx,vsg,wrw,ttw"
                 });
+                if (FrameworkOptions.EnableJwtAuthentication)
+                {
+                    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.ApiKey
+                    });
+                }
             });
         }
 
         if (FrameworkOptions.EnableRealtimeEvents)
         {
             serviceCollection.AddSignalR();
+        }
+
+        if (FrameworkOptions.EnableJwtAuthentication)
+        {
+            serviceCollection.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = FrameworkOptions.JwtIssuer,
+                        ValidAudience = FrameworkOptions.JwtAudience,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(FrameworkOptions.JwtKey ?? throw new InvalidOperationException("JwtKey must be set when EnableJwtAuthentication is true")))
+                    };
+                });
+            serviceCollection.AddAuthorization();
+        }
+
+        if (FrameworkOptions.EnableCookieAuthentication)
+        {
+            serviceCollection.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie();
+            serviceCollection.AddAuthorization();
         }
 
         try

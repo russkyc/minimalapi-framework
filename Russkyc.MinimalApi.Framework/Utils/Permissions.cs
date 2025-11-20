@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Reflection;
+using System.Security.Claims;
 using Russkyc.MinimalApi.Framework.Core;
 using Russkyc.MinimalApi.Framework.Core.Access;
 using Russkyc.MinimalApi.Framework.Extensions;
@@ -22,9 +23,43 @@ internal static class Permissions
         if (!methods.Contains(method)) return true;
         var attributePermissions = permissionsAttributes
             .Where(attribute => attribute.Method == method)
-            .SelectMany(attribute => attribute.Permission);
-        var permissions = httpContext.Request.Headers.GetCommaSeparatedValues(FrameworkOptions.PermissionHeader);
-        return permissions.Any(permission => attributePermissions.Any(permission.Equals));
+            .SelectMany(attribute => attribute.Permission)
+            .Select(p => p.Trim())
+            .Where(p => !string.IsNullOrEmpty(p))
+            .ToArray();
+
+        // collect permissions from header
+        var permissionsSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var headerPermissions = httpContext.Request.Headers
+            .GetCommaSeparatedValues(FrameworkOptions.PermissionHeader)
+            .Select(p => p.Trim())
+            .Where(p => !string.IsNullOrEmpty(p));
+        foreach (var p in headerPermissions) permissionsSet.Add(p);
+
+        // also collect permissions from authenticated user's claims (common claim names: "permissions", "permission")
+        if (httpContext.User.Identity?.IsAuthenticated == true)
+        {
+            IEnumerable<string> claimPermissions = Enumerable.Empty<string>();
+
+            claimPermissions = claimPermissions
+                .Concat(httpContext.User.FindAll("permissions").SelectMany(claim => claim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries)))
+                .Concat(httpContext.User.FindAll("permission").SelectMany(claim => claim.Value.Split(',', StringSplitOptions.RemoveEmptyEntries)));
+
+            foreach (var cp in claimPermissions.Select(c => c.Trim()).Where(c => !string.IsNullOrEmpty(c)))
+            {
+                permissionsSet.Add(cp);
+            }
+        }
+
+        var hasPermission = permissionsSet.Any(permission => attributePermissions.Any(ap => string.Equals(permission, ap, StringComparison.OrdinalIgnoreCase)));
+
+        if (!hasPermission && FrameworkOptions.EnableRoleBasedPermissions && httpContext.User.Identity?.IsAuthenticated == true)
+        {
+            var userRoles = httpContext.User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+            hasPermission = userRoles.Any(role => attributePermissions.Any(ap => string.Equals(role, ap, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return hasPermission;
     }
 
     private static IEnumerable<Type> GetNestedEntityTypes(Type type)
